@@ -18,3 +18,5 @@ def run(zip_code='94024'):
     img = convert_image(img)
     img.save('latest.jpg')
 
+run()
+
