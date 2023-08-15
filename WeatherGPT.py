@@ -376,7 +376,7 @@ def resize_img(img):
         new_width = int(new_height * aspect_ratio)
 
     # Resize the image
-    resized_image = img.resize((new_width, new_height), PIL.Image.ANTIALIAS)
+    resized_image = img.resize((new_width, new_height), PIL.Image.LANCZOS)
     # Create a black background
     background = PIL.Image.new("RGB", (target_width, target_height), "white")
     # Calculate the position to paste the resized image onto the background
