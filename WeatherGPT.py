@@ -35,7 +35,6 @@ import geopy
 import numpy as np
 
 logger = structlog.getLogger()
-weather_api_key = open('/Users/jong/.weatherapi').read()
 animals = [x.strip() for x in open('animals.txt').readlines()]
 art_styles = [x.strip() for x in open('art_styles.txt').readlines()]
 font_path = hf_hub_download("jonathang/fonts-ttf", "Vogue.ttf")
@@ -64,9 +63,8 @@ def get_lat_long_gmaps(zip):
 # -
 
 class Weather:
-    def __init__(self, zip_code='10001', api_key=weather_api_key):
+    def __init__(self, zip_code='10001'):
         self.zip_code = zip_code
-        self.api_key = api_key
 
     def get_weather(self):
         lat, long = get_lat_long(self.zip_code)
