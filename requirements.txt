@@ -13,3 +13,4 @@ Pillow
 huggingface_hub
 geopy
 numpy
+numba
