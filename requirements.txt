@@ -12,3 +12,4 @@ PyPDF2
 Pillow
 huggingface_hub
 geopy
+numpy
