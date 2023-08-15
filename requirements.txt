@@ -9,3 +9,4 @@ retrying
 bs4
 feedparser
 PyPDF2
+Pillow
