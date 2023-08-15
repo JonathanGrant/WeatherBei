@@ -10,3 +10,4 @@ bs4
 feedparser
 PyPDF2
 Pillow
+huggingface_hub
