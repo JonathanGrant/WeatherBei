@@ -11,3 +11,4 @@ feedparser
 PyPDF2
 Pillow
 huggingface_hub
+geopy
