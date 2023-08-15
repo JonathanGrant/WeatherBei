@@ -27,8 +27,15 @@ def get_weather_image():
     
     img_io = io.BytesIO()
     image.save(img_io, 'PNG')
+    image.save('latest.png', 'PNG')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png')
+
+@app.route('/latest')
+def get_latest():
+    f = open('latest.png', 'rb')
+    return send_file(f, mimetype='image/png')
+
 
 if __name__ == '__main__':
     app.run()

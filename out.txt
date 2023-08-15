@@ -1,0 +1,13 @@
+Collecting pyzmq
+  Using cached pyzmq-25.0.2.tar.gz (1.2 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: pyzmq
+  Building wheel for pyzmq (pyproject.toml): started
+  Building wheel for pyzmq (pyproject.toml): still running...
+  Building wheel for pyzmq (pyproject.toml): finished with status 'canceled'
+ERROR: Operation cancelled by user
