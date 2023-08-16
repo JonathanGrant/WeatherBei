@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.15.0
 #   kernelspec:
-#     display_name: '3.11'
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: '3.11'
+#     name: python3
 # ---
 
 # +
@@ -24,7 +24,9 @@ import IPython.display as display
 from base64 import b64decode
 import base64
 from io import BytesIO
+import textwrap
 import PIL
+import datetime
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
@@ -35,10 +37,12 @@ import geopy
 import numpy as np
 
 logger = structlog.getLogger()
+weather_api_key = open('/Users/jong/.weatherapi').read()
 animals = [x.strip() for x in open('animals.txt').readlines()]
 art_styles = [x.strip() for x in open('art_styles.txt').readlines()]
 font_path = hf_hub_download("jonathang/fonts-ttf", "Vogue.ttf")
 other_font_path = hf_hub_download("ybelkada/fonts", "Arial.TTF")
+mono_font_path = hf_hub_download("jonathang/fonts-ttf", "DejaVuSansMono.ttf")
 
 # +
 import cachetools
@@ -63,46 +67,28 @@ def get_lat_long_gmaps(zip):
 # -
 
 class Weather:
-    def __init__(self, zip_code='10001'):
+    def __init__(self, zip_code='10001', api_key=weather_api_key):
         self.zip_code = zip_code
+        self.api_key = api_key
 
     def get_weather(self):
         lat, long = get_lat_long(self.zip_code)
-        url = f"https://forecast.weather.gov/MapClick.php?lat={lat:.2f}&lon={long:.2f}&unit=0&lg=english&FcstType=json"
+        today = datetime.datetime.now()
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,et0_fao_evapotranspiration,vapor_pressure_deficit,windspeed_10m,winddirection_10m,windgusts_10m,temperature_80m,soil_temperature_0cm,soil_moisture_0_1cm,uv_index,uv_index_clear_sky,is_day,cape,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation,shortwave_radiation_instant,direct_radiation_instant,diffuse_radiation_instant,direct_normal_irradiance_instant,terrestrial_radiation_instant&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match,ecmwf_ifs04,metno_nordic,gfs_seamless,jma_seamless,icon_seamless,gem_seamless,meteofrance_seamless"
+        # url = f"https://forecast.weather.gov/MapClick.php?lat={lat:.2f}&lon={long:.2f}&unit=0&lg=english&FcstType=json"
         headers = {'accept': 'application/json'}
         return requests.get(url, headers=headers).json()
 
     def get_info(self):
         data = self.get_weather()
         new_data = {}
-        new_data['now'] = data['currentobservation']
-    
-        # The 'time' and 'data' keys seem to have hourly/daily data
-        # Assuming the first entry in these lists is for the current hour
-        new_data['hour'] = {
-            'time': data['time']['startValidTime'][0],
-            'tempLabel': data['time']['tempLabel'][0],
-            'temperature': data['data']['temperature'][0],
-            'pop': data['data']['pop'][0],
-            'weather': data['data']['weather'][0],
-            'iconLink': data['data']['iconLink'][0],
-            'text': data['data']['text'][0],
-        }
-    
-        # And the rest of the 'time' and 'data' lists are for the rest of the day
-        new_data['day'] = {
-            'time': data['time']['startValidTime'][1:],
-            'tempLabel': data['time']['tempLabel'][1:],
-            'temperature': data['data']['temperature'][1:],
-            'pop': data['data']['pop'][1:],
-            'weather': data['data']['weather'][1:],
-            'iconLink': data['data']['iconLink'][1:],
-            'text': data['data']['text'][1:],
-        }
-    
-        # Everything not included above
-        new_data['etc'] = str(data)
-    
+        now = datetime.datetime.now()
+        i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
+        new_data['now'] = {k: v[i] for k, v in data['hourly'].items()}
+        new_data['day'] = data['daily']
+        new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
+        new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
+        # new_data['etc'] = str(data)
         return new_data
 
 
@@ -187,10 +173,48 @@ def create_collage(image1, image2, image3, image4):
     return new_img
 
 
+def write_text_on_image(text, image_size, font_size=12):
+    image = PIL.Image.new('RGB', image_size, color='white')
+    draw = PIL.ImageDraw.Draw(image)
+    font = PIL.ImageFont.truetype(mono_font_path, font_size)
+
+    margin = offset = 0
+    for lines in text.split('. '):
+        for line in textwrap.wrap(lines, width=image_size[0]//7): # You can adjust the width parameter
+            draw.text((margin, offset), line, font=font, fill="black")
+            offset += font_size
+
+    return image
+
+
+def resize_img(img):
+    # Define target size
+    target_width, target_height = 800, 480
+    # Calculate the aspect ratio
+    aspect_ratio = img.width / img.height
+    # Determine new size while keeping aspect ratio
+    if aspect_ratio > target_width / target_height:
+        new_width = target_width
+        new_height = int(new_width / aspect_ratio)
+    else:
+        new_height = target_height
+        new_width = int(new_height * aspect_ratio)
+
+    # Resize the image
+    resized_image = img.resize((new_width, new_height), PIL.Image.LANCZOS)
+    # Create a black background
+    background = PIL.Image.new("RGB", (target_width, target_height), "white")
+    # Calculate the position to paste the resized image onto the background
+    position = ((target_width - new_width) // 2, (target_height - new_height) // 2)
+    # Paste the resized image onto the background
+    background.paste(resized_image, position)
+    return background
+
+
 class WeatherDraw:
     def clean_text(self, weather_info):
         chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary that will overlay on top of an image.")
-        text = chat.message(str(weather_info))
+        text = chat.message(str(weather_info)[:4000])
         return text
 
     def generate_image(self, weather_info, **kwargs):
@@ -203,7 +227,7 @@ The image should make obvious what the weather is.
 The animal should be extremely anthropomorphised.
 Only write the short description and nothing else.
 Do not include specific numbers.'''.replace('\n', ' '))
-        description = chat.message(str(weather_info))
+        description = chat.message(str(weather_info)[:4000])
         hd_modifiers = """3840x2160
 8k 3D / 16k 3D
 8k resolution / 16k resolution
@@ -223,58 +247,14 @@ Ultrafine detail
         return img, txt
 
     def weather_img(self, weather_data):
-        import io
-        # Create a new image with white background
-        image = PIL.Image.new('RGB', (256, 256), (255, 255, 255))
-        draw = PIL.ImageDraw.Draw(image)
-    
-        # Load a font
-        font = PIL.ImageFont.truetype(other_font_path, 12)
-
-        # Draw text on the image
-        y_text = 5
-        items_to_display = {
-            'now': {'Temperature': weather_data['now']['Temp'], 
-                    'Condition': weather_data['now']['Weather'],}, 
-            'hour': {'Temperature': weather_data['hour']['temperature'], 
-                    'Condition': weather_data['hour']['weather']},
-            'day': {'High': int(max(float(t) for t in weather_data['day']['temperature'])), 
-                    'Low': int(min(float(t) for t in weather_data['day']['temperature'])), 
-                    'Condition': weather_data['day']['weather'][0]}, 
-        }
-    
-        for category, values in items_to_display.items():
-            draw.text((5, y_text), category, font=font, fill=(0, 0, 0))
-            y_text += 15
-            for key, value in values.items():
-                text = f"{key}: {value}"
-                draw.text((10, y_text), text, font=font, fill=(0, 0, 0))
-                y_text += 15
-    
-        # Download the weather condition icon for now, day and next hour
-        for index, time in enumerate(items_to_display.keys()):
-            if time == 'day':
-                icon_url = weather_data['day']['iconLink'][0]
-            elif time == 'now':
-                icon_url = 'https://forecast.weather.gov/newimages/medium/'+weather_data['now']['Weatherimage']
-            else:
-                icon_url = weather_data[time]['iconLink']
-            print(time, icon_url)
-            try:
-                response = requests.get(icon_url)
-                icon = PIL.Image.open(io.BytesIO(response.content))
-            except:
-                continue
-            # Resize the icon
-            icon = icon.resize((60, 60))
-            # Paste the icon on the image
-            image.paste(icon, (index*70 + 10, 190))
-
-        return image
+        return write_text_on_image(
+            self.clean_text(weather_data['day']),
+            ((800-480)//2, 480),
+        )
 
     def step(self, zip_code='10001', **kwargs):
         forecast = Weather(zip_code).get_info()
-        images, texts = [], []
+        images, texts = [None] * 4, [None] * 4
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
             runs = {}
             for time, data in forecast.items():
@@ -283,14 +263,18 @@ Ultrafine detail
             for r in concurrent.futures.as_completed(runs.keys()):
                 img, txt = r.result()
                 time, data = runs[r]
-                images.append(overlay_text_on_image(img, time, 'top-right', decode=True))
-                # images.append(overlay_text_on_image(img, '', 'top-right', decode=True))
-                texts.append(txt)
-        return create_collage(*images, self.weather_img(forecast)), *texts
+                ridx = list(forecast.keys()).index(time)
+                images[ridx] = overlay_text_on_image(img, time, 'top-right', decode=True)
+                texts[ridx] = txt
+        # return create_collage(*images, self.weather_img(forecast)), *texts)
+        img = resize_img(create_collage(*images))
+        img.paste(self.weather_img(forecast), (480+160, 0))
+
+        return img, *texts
 
 
 # +
-# out = WeatherDraw().step('94024')
+# out = WeatherDraw().step()
 # out[0]
 
 # +
@@ -350,43 +334,19 @@ def disp_concat(*images):
     # Display the concatenated image
     display.display(concatenated_image)
 
-get_7color = lambda img: PIL.Image.fromarray(np.array(colors[np.argmin(((np.array(img, dtype=float).reshape(-1, 3)[:, np.newaxis, :] - colors)**2).sum(axis=2), axis=1)].reshape(512, 512, 3), dtype=np.uint8))
-
+get_7color = lambda img: PIL.Image.fromarray(np.array(colors[np.argmin(((np.array(img, dtype=float).reshape(-1, 3)[:, np.newaxis, :] - colors)**2).sum(axis=2), axis=1)].reshape(img.height, img.width, 3), dtype=np.uint8))
 
 # +
 # # %%time
 # fsd = floyd_steinberg_dithering(out[0], colors, error_weights)
-# disp_concat(fsd, get_7color(fsd))
+# disp_concat(fsd, get_7color(out[0]))
 
 # +
-# a = get_7color(fsd)
-# -
-
-def resize_img(img):
-    # Define target size
-    target_width, target_height = 800, 480
-    # Calculate the aspect ratio
-    aspect_ratio = img.width / img.height
-    # Determine new size while keeping aspect ratio
-    if aspect_ratio > target_width / target_height:
-        new_width = target_width
-        new_height = int(new_width / aspect_ratio)
-    else:
-        new_height = target_height
-        new_width = int(new_height * aspect_ratio)
-
-    # Resize the image
-    resized_image = img.resize((new_width, new_height), PIL.Image.LANCZOS)
-    # Create a black background
-    background = PIL.Image.new("RGB", (target_width, target_height), "white")
-    # Calculate the position to paste the resized image onto the background
-    position = ((target_width - new_width) // 2, (target_height - new_height) // 2)
-    # Paste the resized image onto the background
-    background.paste(resized_image, position)
-    return background
+# get_7color(fsd)
 
 # +
 # resize_img(a)
+# get_7color(fsd)
 
 # +
 # # %%time
