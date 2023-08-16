@@ -5,7 +5,7 @@ import PIL.Image
 
 def convert_image(image):
     dithered = floyd_steinberg_dithering(image, colors, error_weights)
-    img.save('latest_ditherd.jpg')
+    dithered.save('latest_dithered.jpg')
     return get_7color(dithered)
 
 def get_weather_image(zip_code='10001'):
