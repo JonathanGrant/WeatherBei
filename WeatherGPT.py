@@ -13,11 +13,11 @@
 # ---
 
 # +
-import os
 import requests
 import structlog
 import openai
 import random
+import zoneinfo
 import enum
 import time
 import retrying
@@ -25,6 +25,7 @@ import IPython.display as display
 from base64 import b64decode
 import base64
 from io import BytesIO
+import os
 import textwrap
 import PIL
 import datetime
@@ -72,8 +73,8 @@ class Weather:
 
     def get_weather(self):
         lat, long = get_lat_long(self.zip_code)
-        today = datetime.datetime.now()
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,et0_fao_evapotranspiration,vapor_pressure_deficit,windspeed_10m,winddirection_10m,windgusts_10m,temperature_80m,soil_temperature_0cm,soil_moisture_0_1cm,uv_index,uv_index_clear_sky,is_day,cape,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation,shortwave_radiation_instant,direct_radiation_instant,diffuse_radiation_instant,direct_normal_irradiance_instant,terrestrial_radiation_instant&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match,ecmwf_ifs04,metno_nordic,gfs_seamless,jma_seamless,icon_seamless,gem_seamless,meteofrance_seamless"
+        today = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,windspeed_10m,winddirection_10m,windgusts_10m,uv_index,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match"
         # url = f"https://forecast.weather.gov/MapClick.php?lat={lat:.2f}&lon={long:.2f}&unit=0&lg=english&FcstType=json"
         headers = {'accept': 'application/json'}
         return requests.get(url, headers=headers).json()
@@ -81,13 +82,12 @@ class Weather:
     def get_info(self):
         data = self.get_weather()
         new_data = {}
-        now = datetime.datetime.now()
+        now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
         i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
         new_data['now'] = {k: v[i] for k, v in data['hourly'].items()}
         new_data['day'] = data['daily']
         new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
         new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
-        # new_data['etc'] = str(data)
         return new_data
 
 
@@ -172,14 +172,14 @@ def create_collage(image1, image2, image3, image4):
     return new_img
 
 
-def write_text_on_image(text, image_size, font_size=12):
+def write_text_on_image(text, image_size, font_size=24):
     image = PIL.Image.new('RGB', image_size, color='white')
     draw = PIL.ImageDraw.Draw(image)
     font = PIL.ImageFont.truetype(mono_font_path, font_size)
 
     margin = offset = 0
-    for lines in text.split('. '):
-        for line in textwrap.wrap(lines, width=image_size[0]//7): # You can adjust the width parameter
+    for lines in '\n'.join(text.split('. ')).split('\n'):
+        for line in textwrap.wrap(lines, width=image_size[0]//(font_size*7//12)): # You can adjust the width parameter
             draw.text((margin, offset), line, font=font, fill="black")
             offset += font_size
 
@@ -212,7 +212,7 @@ def resize_img(img):
 
 class WeatherDraw:
     def clean_text(self, weather_info):
-        chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary that will overlay on top of an image.")
+        chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary. Just include the weather, no dates.")
         text = chat.message(str(weather_info)[:4000])
         return text
 
@@ -241,13 +241,20 @@ Ultrafine detail
 
     def step_one_forecast(self, weather_info, **kwargs):
         img, txt = self.generate_image(weather_info, **kwargs)
-        # text = self.clean_text(weather_info)
-        # return overlay_text_on_image(img, text, 'bottom-left')
         return img, txt
 
     def weather_img(self, weather_data):
         return write_text_on_image(
             self.clean_text(weather_data['day']),
+            ((800-480)//2, 480),
+        )
+
+    def left_text_img(self, weather_data):
+        now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
+        animal = random.choice(animals)
+        chat = Chat(f'Give me a concise rare fun fact about the cute animal, {animal}.')
+        return write_text_on_image(
+            f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message()}',
             ((800-480)//2, 480),
         )
 
@@ -268,6 +275,7 @@ Ultrafine detail
         # return create_collage(*images, self.weather_img(forecast)), *texts)
         img = resize_img(create_collage(*images))
         img.paste(self.weather_img(forecast), (480+160, 0))
+        img.paste(self.left_text_img(forecast), (0, 0))
 
         return img, *texts
 
