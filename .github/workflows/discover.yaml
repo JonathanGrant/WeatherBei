@@ -3,7 +3,7 @@ name: Generate new forecast image
 on:
   workflow_dispatch:
   schedule:
-    - cron: '6 10 * * *' # This schedules the action to run every day at 10am UTC which is 6am EDT
+    - cron: '6 */4 * * *' # This schedules the action to run every day at 10am UTC which is 6am EDT
 
 jobs:
   generate_image:
