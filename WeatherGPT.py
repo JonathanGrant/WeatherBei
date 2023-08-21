@@ -84,10 +84,10 @@ class Weather:
         new_data = {}
         now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
         i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
-        new_data['now'] = {k: v[i] for k, v in data['hourly'].items()}
         new_data['day'] = data['daily']
         new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
         new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
+        new_data['night'] = {k: v[19:] for k, v in data['hourly'].items()}
         return new_data
 
 
@@ -252,7 +252,7 @@ Ultrafine detail
     def left_text_img(self, weather_data):
         now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
         animal = random.choice(animals)
-        chat = Chat(f'Give me a concise rare fun fact about the cute animal, {animal}.')
+        chat = Chat(f'Give me a concise, rare, cute, fun fact about the animal, {animal}.')
         return write_text_on_image(
             f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message()}',
             ((800-480)//2, 480),
