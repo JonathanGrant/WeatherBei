@@ -3,7 +3,7 @@ name: Generate new forecast image
 on:
   workflow_dispatch:
   schedule:
-    - cron: '6 */4 * * *'
+    - cron: '6 10 * * *'
 
 jobs:
   generate_image:
