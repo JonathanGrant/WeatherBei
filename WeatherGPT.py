@@ -51,7 +51,7 @@ import cachetools
 @cachetools.cached(cache={})
 def get_lat_long(zip):
     try:
-        loc = geopy.Nominatim(user_agent='weatherboy-gpt').geocode(str(zip))
+        loc = geopy.Nominatim(user_agent='weatherboy-gpt').geocode(str(zip)+ ', USA')
         return loc.latitude, loc.longitude
     except:
         return get_lat_long_gmaps(zip)
@@ -59,7 +59,7 @@ def get_lat_long(zip):
 @cachetools.cached(cache={})
 def get_lat_long_gmaps(zip):
     api_key = os.environ["GMAPS_API"] or open('/Users/jong/.gmaps_key').read()
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={zip}&key={api_key}"
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={zip}, USA&key={api_key}"
     resp = requests.get(url).json()
     latlng = resp['results'][0]['geometry']['location']
     return latlng['lat'], latlng['lng']
@@ -73,21 +73,45 @@ class Weather:
 
     def get_weather(self):
         lat, long = get_lat_long(self.zip_code)
-        today = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,windspeed_10m,winddirection_10m,windgusts_10m,uv_index,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match"
-        # url = f"https://forecast.weather.gov/MapClick.php?lat={lat:.2f}&lon={long:.2f}&unit=0&lg=english&FcstType=json"
-        headers = {'accept': 'application/json'}
-        return requests.get(url, headers=headers).json()
+        # today = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
+        # url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,windspeed_10m,winddirection_10m,windgusts_10m,uv_index,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match"
+        url = f"https://forecast.weather.gov/MapClick.php?&lat={lat:.2f}&lon={long:.0f}&FcstType=json"
+        print(url)
+        # headers = {'accept': 'application/json'}
+        # return requests.get(url, headers=headers).json()
+        return requests.get(url).json()
 
     def get_info(self):
-        data = self.get_weather()
+        weather_json = self.get_weather()
         new_data = {}
-        now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
-        i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
-        new_data['day'] = data['daily']
-        new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
-        new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
-        new_data['night'] = {k: v[19:] for k, v in data['hourly'].items()}
+        # now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
+        # i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
+        # new_data['day'] = data['daily']
+        # new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
+        # new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
+        # new_data['night'] = {k: v[19:] for k, v in data['hourly'].items()}
+        start_period_names = weather_json['time']['startPeriodName'][:4]
+        start_times = weather_json['time']['startValidTime'][:4]
+        temp_labels = weather_json['time']['tempLabel'][:4]
+        temperatures = weather_json['data']['temperature'][:4]
+        pops = weather_json['data']['pop'][:4]
+        weathers = weather_json['data']['weather'][:4]
+        icon_links = weather_json['data']['iconLink'][:4]
+        texts = weather_json['data']['text'][:4]
+        
+        for start_period, start_time, temp_label, temp, pop, weather, icon_link, text in zip(
+            start_period_names, start_times, temp_labels, temperatures, pops, weathers, icon_links, texts
+        ):
+            new_data[start_period] = {
+                'start_time': start_time,
+                'temp_label': temp_label,
+                'temperature': temp,
+                'pop': pop,
+                'weather': weather,
+                'icon_link': icon_link,
+                'text': text
+            }
+        
         return new_data
 
 
@@ -245,7 +269,7 @@ Ultrafine detail
 
     def weather_img(self, weather_data):
         return write_text_on_image(
-            self.clean_text(weather_data['day']),
+            weather_data['Today']['text'],
             ((800-480)//2, 480),
         )
 
