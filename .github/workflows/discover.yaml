@@ -29,6 +29,8 @@ jobs:
       run: python weather_runner.py
       env:
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        DALLE3_COOKIE: ${{ secrets.DALLE3_COOKIE }}
+        GMAPS_API: ${{ secrets.GMAPS_API }}
 
     - name: Commit and push if it changed
       run: | 
