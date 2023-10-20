@@ -46,20 +46,81 @@ other_font_path = hf_hub_download("ybelkada/fonts", "Arial.TTF")
 mono_font_path = hf_hub_download("jonathang/fonts-ttf", "DejaVuSansMono.ttf")
 
 # +
+import requests
+import logging
+import io
+from dalle3 import Dalle
+logging.basicConfig(level=logging.INFO)
+
+import threading
+
+class FunctionTimeoutError(Exception):
+    """Exception to be raised when a function times out"""
+    pass
+
+def timeout_function(func, args=(), kwargs={}, timeout_duration=90.0):
+    """Timeout a function after `timeout_duration` seconds"""
+
+    class FunctionThread(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.result = None
+
+        def run(self):
+            self.result = func(*args, **kwargs)
+    
+    # Create a thread to run the function
+    func_thread = FunctionThread()
+    
+    # Start the thread
+    func_thread.start()
+    
+    # Wait for `timeout_duration` seconds or until the thread finishes
+    func_thread.join(timeout_duration)
+
+    # Check if thread is still alive (i.e., function has not completed)
+    if func_thread.is_alive():
+        # Terminate the function thread
+        # func_thread.join()  # Optional, ensures any cleanup in the function
+        raise FunctionTimeoutError(f"Function timed out after {timeout_duration} seconds")
+    else:
+        return func_thread.result
+
+class Dalle3:
+    def __init__(self, cookie):
+        self.cookie = cookie
+        self.dalle = Dalle(cookie)
+
+    def get_img(self, prompt):
+        prompt = f'One square photo.\n{prompt}'
+        logger.info(prompt)
+        self.dalle.create(f'Dalle3: {prompt=}')
+        urls = timeout_function(self.dalle.get_urls)
+        logger.info(f'Dalle3: {urls=}, choosing just first one')
+        url = urls[0]
+        resp = requests.get(url)
+        img_data = io.BytesIO(resp.content)
+        return PIL.Image.open(img_data)
+
+DALLE3_COOKIE = os.environ['DALLE3_COOKIE']
+# img = Dalle3(cookie).get_img('Stained glass of Under the partly cloudy sky, an adorable Mallard dressed in a tiny raincoat joyfully prances through a light drizzle, holding a colorful mini umbrella. NYC background')
+# img
+
+# +
 import cachetools
 
 @cachetools.cached(cache={})
-def get_lat_long(zip):
+def get_lat_long(zip, country='USA'):
     try:
-        loc = geopy.Nominatim(user_agent='weatherboy-gpt').geocode(str(zip)+ ', USA')
+        loc = geopy.Nominatim(user_agent='weatherboy-gpt').geocode(str(zip)+ f', {country}')
         return loc.latitude, loc.longitude
     except:
         return get_lat_long_gmaps(zip)
 
 @cachetools.cached(cache={})
-def get_lat_long_gmaps(zip):
-    api_key = os.environ["GMAPS_API"] or open('/Users/jong/.gmaps_key').read()
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={zip}, USA&key={api_key}"
+def get_lat_long_gmaps(zip, country='USA'):
+    api_key = os.environ.get("GMAPS_API", None) or open('/Users/jong/.gmaps_key').read()
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={zip}, {country}&key={api_key}"
     resp = requests.get(url).json()
     latlng = resp['results'][0]['geometry']['location']
     return latlng['lat'], latlng['lng']
@@ -73,23 +134,13 @@ class Weather:
 
     def get_weather(self):
         lat, long = get_lat_long(self.zip_code)
-        # today = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
-        # url = f"https://api.open-meteo.com/v1/forecast?latitude={lat:.3f}&longitude={long:.3f}&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,apparent_temperature,precipitation_probability,precipitation,rain,showers,snowfall,snow_depth,weathercode,pressure_msl,surface_pressure,cloudcover,cloudcover_low,cloudcover_mid,cloudcover_high,visibility,evapotranspiration,windspeed_10m,winddirection_10m,windgusts_10m,uv_index,freezinglevel_height,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation&daily=weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant,shortwave_radiation_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=1&forecast_days=1&start_date={today:%Y-%m-%d}&end_date={today:%Y-%m-%d}&models=best_match"
         url = f"https://forecast.weather.gov/MapClick.php?&lat={lat:.2f}&lon={long:.0f}&FcstType=json"
         print(url)
-        # headers = {'accept': 'application/json'}
-        # return requests.get(url, headers=headers).json()
         return requests.get(url).json()
 
     def get_info(self):
         weather_json = self.get_weather()
         new_data = {}
-        # now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
-        # i = data['hourly']['time'].index(now.strftime("%Y-%m-%dT%H:00"))
-        # new_data['day'] = data['daily']
-        # new_data['morning'] = {k: v[7:13] for k, v in data['hourly'].items()}
-        # new_data['afternoon'] = {k: v[13:19] for k, v in data['hourly'].items()}
-        # new_data['night'] = {k: v[19:] for k, v in data['hourly'].items()}
         start_period_names = weather_json['time']['startPeriodName'][:4]
         start_times = weather_json['time']['startValidTime'][:4]
         temp_labels = weather_json['time']['tempLabel'][:4]
@@ -258,10 +309,16 @@ Detailed
 Ultra HD
 Ultrafine detail
 """.split('\n')
-        prompt = f'{random.choice(art_styles)} of {description} {random.choice(hd_modifiers)}'
+        prompt = f'{random.choice(art_styles)} of {description}'
         logger.info(prompt)
-        img = Image.create(prompt, **kwargs)
-        return img["b64_json"], prompt
+        try:
+            img = Dalle3(DALLE3_COOKIE).get_img(f'{prompt} NYC background').resize((256, 256))
+        except Exception as e:
+            logger.warning(f'Could not use Dalle3, error={e}')
+            img = Image.create(f'{prompt} {random.choice(hd_modifiers)}', **kwargs)
+            img_bytes = base64.b64decode(img["b64_json"])
+            img = PIL.Image.open(BytesIO(img_bytes))
+        return img, prompt
 
     def step_one_forecast(self, weather_info, **kwargs):
         img, txt = self.generate_image(weather_info, **kwargs)
@@ -269,7 +326,7 @@ Ultrafine detail
 
     def weather_img(self, weather_data):
         return write_text_on_image(
-            weather_data['Today']['text'],
+            list(weather_data.values())[0]['text'],
             ((800-480)//2, 480),
         )
 
@@ -282,10 +339,11 @@ Ultrafine detail
             ((800-480)//2, 480),
         )
 
-    def step(self, zip_code='10001', **kwargs):
-        forecast = Weather(zip_code).get_info()
+    def step(self, zip_code='10001', forecast=None, images=None, **kwargs):
+        if forecast is None:
+            forecast = Weather(zip_code).get_info()
         images, texts = [None] * 4, [None] * 4
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as e:
             runs = {}
             for time, data in forecast.items():
                 if time == 'etc': continue
@@ -294,7 +352,7 @@ Ultrafine detail
                 img, txt = r.result()
                 time, data = runs[r]
                 ridx = list(forecast.keys()).index(time)
-                images[ridx] = overlay_text_on_image(img, time, 'top-right', decode=True)
+                images[ridx] = overlay_text_on_image(img, time, 'top-right', decode=False)
                 texts[ridx] = txt
         # return create_collage(*images, self.weather_img(forecast)), *texts)
         img = resize_img(create_collage(*images))
@@ -366,22 +424,6 @@ def disp_concat(*images):
     display.display(concatenated_image)
 
 get_7color = lambda img: PIL.Image.fromarray(np.array(colors[np.argmin(((np.array(img, dtype=float).reshape(-1, 3)[:, np.newaxis, :] - colors)**2).sum(axis=2), axis=1)].reshape(img.height, img.width, 3), dtype=np.uint8))
-
-# +
-# # %%time
-# fsd = floyd_steinberg_dithering(out[0], colors, error_weights)
-# disp_concat(fsd, get_7color(out[0]))
-
-# +
-# get_7color(fsd)
-
-# +
-# resize_img(a)
-# get_7color(fsd)
-
-# +
-# # %%time
-# resize_img(get_7color(floyd_steinberg_dithering(WeatherDraw().step('94024')[0], colors, error_weights)))
 # -
 
 
