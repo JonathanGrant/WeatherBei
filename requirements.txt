@@ -15,3 +15,5 @@ geopy
 numpy
 numba
 dalle3
+timezonefinder
+pytz

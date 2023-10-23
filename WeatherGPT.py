@@ -92,7 +92,6 @@ class Dalle3:
         self.dalle = Dalle(cookie)
 
     def get_img(self, prompt):
-        prompt = f'One square photo.\n{prompt}'
         logger.info(prompt)
         self.dalle.create(f'Dalle3: {prompt=}')
         urls = timeout_function(self.dalle.get_urls)
@@ -102,9 +101,7 @@ class Dalle3:
         img_data = io.BytesIO(resp.content)
         return PIL.Image.open(img_data)
 
-DALLE3_COOKIE = os.environ['DALLE3_COOKIE']
-# img = Dalle3(cookie).get_img('Stained glass of Under the partly cloudy sky, an adorable Mallard dressed in a tiny raincoat joyfully prances through a light drizzle, holding a colorful mini umbrella. NYC background')
-# img
+DALLE3_COOKIE = os.environ.get('DALLE3_COOKIE') or open('/Users/jong/.dalle3_cookie').read().strip()
 
 # +
 import cachetools
@@ -132,14 +129,17 @@ class Weather:
     def __init__(self, zip_code='10001'):
         self.zip_code = zip_code
 
-    def get_weather(self):
-        lat, long = get_lat_long(self.zip_code)
+    def get_weather(self, lat_long=None):
+        if lat_long is None:
+            lat, long = get_lat_long(self.zip_code)
+        else:
+            lat, long = lat_long
         url = f"https://forecast.weather.gov/MapClick.php?&lat={lat:.2f}&lon={long:.0f}&FcstType=json"
         print(url)
         return requests.get(url).json()
 
-    def get_info(self):
-        weather_json = self.get_weather()
+    def get_info(self, lat_long=None, just_now=False):
+        weather_json = self.get_weather(lat_long=lat_long)
         new_data = {}
         start_period_names = weather_json['time']['startPeriodName'][:4]
         start_times = weather_json['time']['startValidTime'][:4]
@@ -162,7 +162,8 @@ class Weather:
                 'icon_link': icon_link,
                 'text': text
             }
-        
+            if just_now:
+                return new_data[start_period]
         return new_data
 
 
@@ -261,6 +262,54 @@ def write_text_on_image(text, image_size, font_size=24):
     return image
 
 
+# +
+import textwrap
+import warnings
+
+
+def write_text_on_image_2(text, image_size):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        img = PIL.Image.new('RGB', image_size, 'white')
+        d = PIL.ImageDraw.Draw(img)
+        
+        initial_font_size = 100
+        max_font_size = initial_font_size
+        font = PIL.ImageFont.truetype(mono_font_path, max_font_size)
+    
+        while True:
+            # Get the width of a single character ('a' for demonstration)
+            char_w, _ = d.textsize('a', font=font)
+            
+            # Calculate approximate characters per line
+            chars_per_line = image_size[0] // char_w
+            wrapper = textwrap.TextWrapper(
+                width=chars_per_line, expand_tabs=False,
+                replace_whitespace=False, break_long_words=False,
+                break_on_hyphens=False,
+            )
+    
+            word_list = wrapper.wrap(text=text)
+            wrapped_text = '\n'.join(word_list)
+            
+            text_w, text_h = d.multiline_textsize(wrapped_text, font=font)
+    
+            if text_w <= image_size[0] and text_h <= image_size[1]:
+                break
+            
+            max_font_size -= 2
+            font = PIL.ImageFont.truetype(mono_font_path, max_font_size)
+            
+        x = (image_size[0] - text_w) / 2
+        y = (image_size[1] - text_h) / 2
+        
+        d.multiline_text((x, y), wrapped_text, fill=(0, 0, 0), font=font)
+        
+        return img
+
+
+# -
+
 def resize_img(img):
     # Define target size
     target_width, target_height = 800, 480
@@ -285,13 +334,46 @@ def resize_img(img):
     return background
 
 
+# +
+from timezonefinder import TimezoneFinder
+
+def find_timezone(latitude, longitude):
+    obj = TimezoneFinder()
+    
+    # The `timezone_at` method performs the lookup
+    result = obj.timezone_at(lat=latitude, lng=longitude)
+    
+    # In case the coordinates do not correspond to any time zone
+    if result is None:
+        return "UTC"
+        
+    return result
+from datetime import datetime
+import pytz
+
+def current_time_in_timezone(timezone_str):
+    # Get the current UTC time
+    utc_now = datetime.now(pytz.utc)
+    
+    # Convert it to the desired timezone
+    target_tz = pytz.timezone(timezone_str)
+    localized_dt = utc_now.astimezone(target_tz)
+    
+    # Format the localized datetime
+    formatted_time = localized_dt.strftime("%Y-%m-%d %H:%M:%S")
+    
+    return formatted_time
+
+
+# -
+
 class WeatherDraw:
     def clean_text(self, weather_info):
         chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary. Just include the weather, no dates.")
         text = chat.message(str(weather_info)[:4000])
         return text
 
-    def generate_image(self, weather_info, **kwargs):
+    def generate_image(self, weather_info, resize=True, **kwargs):
         animal = random.choice(animals)
         logger.info(f"Got animal {animal}")
         chat = Chat(f'''Given
@@ -312,7 +394,9 @@ Ultrafine detail
         prompt = f'{random.choice(art_styles)} of {description}'
         logger.info(prompt)
         try:
-            img = Dalle3(DALLE3_COOKIE).get_img(f'{prompt} NYC background').resize((256, 256))
+            img = Dalle3(DALLE3_COOKIE).get_img(prompt)
+            if resize:
+                img = img.resize((256, 256))
         except Exception as e:
             logger.warning(f'Could not use Dalle3, error={e}')
             img = Image.create(f'{prompt} {random.choice(hd_modifiers)}', **kwargs)
@@ -354,16 +438,30 @@ Ultrafine detail
                 ridx = list(forecast.keys()).index(time)
                 images[ridx] = overlay_text_on_image(img, time, 'top-right', decode=False)
                 texts[ridx] = txt
-        # return create_collage(*images, self.weather_img(forecast)), *texts)
+
         img = resize_img(create_collage(*images))
         img.paste(self.weather_img(forecast), (480+160, 0))
         img.paste(self.left_text_img(forecast), (0, 0))
 
         return img, *texts
 
+    def portrait_step(self, latitude, longitude, **kwargs):
+        """Step func for portrait image gen."""
+        forecast = Weather('').get_info(lat_long=(latitude, longitude), just_now=True)
+        img, prompt = self.generate_image(forecast, resize=False, size=Image.Size.LARGE)
+        # TODO: Add text to img
+        width, height = img.size
+        background = PIL.Image.new("RGB", (width, height*2), "white")
+        background.paste(img, (0, height // 4))
+        background.paste(write_text_on_image_2(prompt, (width, height // 4)), (0, 0))
+        tz = find_timezone(latitude, longitude)
+        now = current_time_in_timezone(tz)
+        background.paste(write_text_on_image_2(f"{now}\n"+self.clean_text(forecast), (width, (3*height) // 4)), (0, (5*height) // 4))
+        return background, img, prompt, forecast
+
 
 # +
-# out = WeatherDraw().step()
+# out = WeatherDraw().portrait_step(40.75, -74.0)
 # out[0]
 
 # +
