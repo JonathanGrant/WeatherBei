@@ -348,12 +348,12 @@ def find_timezone(latitude, longitude):
         return "UTC"
         
     return result
-from datetime import datetime
+
 import pytz
 
 def current_time_in_timezone(timezone_str):
     # Get the current UTC time
-    utc_now = datetime.now(pytz.utc)
+    utc_now = datetime.datetime.now(pytz.utc)
     
     # Convert it to the desired timezone
     target_tz = pytz.timezone(timezone_str)
