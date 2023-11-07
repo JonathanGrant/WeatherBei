@@ -92,6 +92,7 @@ class Dalle3:
         self.dalle = Dalle(cookie)
 
     def get_img(self, prompt):
+        raise Exception("")
         logger.info(prompt)
         self.dalle.create(f'Dalle3: {prompt=}')
         urls = timeout_function(self.dalle.get_urls)
@@ -177,7 +178,7 @@ class Image:
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
     def create(cls, prompt, n=1, size=Size.SMALL):
         logger.info('requesting openai.Image...')
-        resp = openai.Image.create(prompt=prompt, n=n, size=size.value, response_format='b64_json')
+        resp = openai.Image.create(prompt=prompt, n=n, size=size.value,model="dall-e-3", response_format='b64_json')
         logger.info('received openai.Image...')
         if n == 1: return resp["data"][0]
         return resp["data"]
