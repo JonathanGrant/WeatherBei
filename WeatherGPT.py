@@ -176,7 +176,7 @@ class Image:
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, size=Size.SMALL):
+    def create(cls, prompt, n=1, size=Size.LARGE):
         logger.info('requesting openai.Image...')
         resp = openai.Image.create(prompt=prompt, n=n, size=size.value,model="dall-e-3", response_format='b64_json')
         logger.info('received openai.Image...')
