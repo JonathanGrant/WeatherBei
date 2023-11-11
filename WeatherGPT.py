@@ -46,65 +46,6 @@ other_font_path = hf_hub_download("ybelkada/fonts", "Arial.TTF")
 mono_font_path = hf_hub_download("jonathang/fonts-ttf", "DejaVuSansMono.ttf")
 
 # +
-import requests
-import logging
-import io
-from dalle3 import Dalle
-logging.basicConfig(level=logging.INFO)
-
-import threading
-
-class FunctionTimeoutError(Exception):
-    """Exception to be raised when a function times out"""
-    pass
-
-def timeout_function(func, args=(), kwargs={}, timeout_duration=90.0):
-    """Timeout a function after `timeout_duration` seconds"""
-
-    class FunctionThread(threading.Thread):
-        def __init__(self):
-            threading.Thread.__init__(self)
-            self.result = None
-
-        def run(self):
-            self.result = func(*args, **kwargs)
-    
-    # Create a thread to run the function
-    func_thread = FunctionThread()
-    
-    # Start the thread
-    func_thread.start()
-    
-    # Wait for `timeout_duration` seconds or until the thread finishes
-    func_thread.join(timeout_duration)
-
-    # Check if thread is still alive (i.e., function has not completed)
-    if func_thread.is_alive():
-        # Terminate the function thread
-        # func_thread.join()  # Optional, ensures any cleanup in the function
-        raise FunctionTimeoutError(f"Function timed out after {timeout_duration} seconds")
-    else:
-        return func_thread.result
-
-class Dalle3:
-    def __init__(self, cookie):
-        self.cookie = cookie
-        self.dalle = Dalle(cookie)
-
-    def get_img(self, prompt):
-        raise Exception("")
-        logger.info(prompt)
-        self.dalle.create(f'Dalle3: {prompt=}')
-        urls = timeout_function(self.dalle.get_urls)
-        logger.info(f'Dalle3: {urls=}, choosing just first one')
-        url = urls[0]
-        resp = requests.get(url)
-        img_data = io.BytesIO(resp.content)
-        return PIL.Image.open(img_data)
-
-DALLE3_COOKIE = os.environ.get('DALLE3_COOKIE') or open('/Users/jong/.dalle3_cookie').read().strip()
-
-# +
 import cachetools
 
 @cachetools.cached(cache={})
@@ -150,6 +91,7 @@ class Weather:
         weathers = weather_json['data']['weather'][:4]
         icon_links = weather_json['data']['iconLink'][:4]
         texts = weather_json['data']['text'][:4]
+        location = weather_json.get('location', {}).get('areaDescription')
         
         for start_period, start_time, temp_label, temp, pop, weather, icon_link, text in zip(
             start_period_names, start_times, temp_labels, temperatures, pops, weathers, icon_links, texts
@@ -161,7 +103,8 @@ class Weather:
                 'pop': pop,
                 'weather': weather,
                 'icon_link': icon_link,
-                'text': text
+                'text': text,
+                'location': location,
             }
             if just_now:
                 return new_data[start_period]
@@ -178,10 +121,9 @@ class Image:
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
     def create(cls, prompt, n=1, size=Size.LARGE):
         logger.info('requesting openai.Image...')
-        resp = openai.Image.create(prompt=prompt, n=n, size=size.value,model="dall-e-3", response_format='b64_json')
+        resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size.value, model="dall-e-3", response_format='b64_json', timeout=45)
         logger.info('received openai.Image...')
-        if n == 1: return resp["data"][0]
-        return resp["data"]
+        return resp.data[0].b64_json
 
 
 def overlay_text_on_image(img, text, position, text_color=(255, 255, 255), box_color=(0, 0, 0), decode=False):
@@ -349,7 +291,6 @@ def find_timezone(latitude, longitude):
         return "UTC"
         
     return result
-
 import pytz
 
 def current_time_in_timezone(timezone_str):
@@ -371,38 +312,29 @@ def current_time_in_timezone(timezone_str):
 class WeatherDraw:
     def clean_text(self, weather_info):
         chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary. Just include the weather, no dates.")
-        text = chat.message(str(weather_info)[:4000])
+        text = chat.message(str(weather_info)[:4000], model='gpt-4-1106-preview')
         return text
 
     def generate_image(self, weather_info, resize=True, **kwargs):
         animal = random.choice(animals)
+        num_animals = random.randint(1, 3)
         logger.info(f"Got animal {animal}")
         chat = Chat(f'''Given
 the following weather conditions, write a plaintext, short, and vivid description of an
-image of an adorable anthropomorphised {animal} doing an activity in the weather.
+image of {num_animals} adorable anthropomorphised {animal}{"s" if num_animals > 1 else ""} doing an activity in the weather.
 The image should make obvious what the weather is.
 The animal should be extremely anthropomorphised.
 Only write the short description and nothing else.
 Do not include specific numbers.'''.replace('\n', ' '))
-        description = chat.message(str(weather_info)[:4000])
-        hd_modifiers = """3840x2160
-8k 3D / 16k 3D
-8k resolution / 16k resolution
-Detailed
-Ultra HD
-Ultrafine detail
-""".split('\n')
-        prompt = f'{random.choice(art_styles)} of {description}'
+        description = chat.message(str(weather_info)[:4000], model='gpt-4-1106-preview')
+        prompt = description
+        if weather_info.get('location') is not None:
+            prompt += f' {weather_info["location"]} background.'
         logger.info(prompt)
-        try:
-            img = Dalle3(DALLE3_COOKIE).get_img(prompt)
-            if resize:
-                img = img.resize((256, 256))
-        except Exception as e:
-            logger.warning(f'Could not use Dalle3, error={e}')
-            img = Image.create(f'{prompt} {random.choice(hd_modifiers)}', **kwargs)
-            img_bytes = base64.b64decode(img["b64_json"])
-            img = PIL.Image.open(BytesIO(img_bytes))
+        img = Image.create(prompt, **kwargs)
+        img_bytes = base64.b64decode(img)
+        img = PIL.Image.open(BytesIO(img_bytes))
+        img = img.resize((256, 256))
         return img, prompt
 
     def step_one_forecast(self, weather_info, **kwargs):
@@ -420,15 +352,16 @@ Ultrafine detail
         animal = random.choice(animals)
         chat = Chat(f'Give me a concise, rare, cute, fun fact about the animal, {animal}.')
         return write_text_on_image(
-            f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message()}',
+            f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message(model="gpt-4-1106-preview")}',
             ((800-480)//2, 480),
         )
 
     def step(self, zip_code='10001', forecast=None, images=None, **kwargs):
         if forecast is None:
             forecast = Weather(zip_code).get_info()
+        self.forecast = forecast
         images, texts = [None] * 4, [None] * 4
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as e:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as e:
             runs = {}
             for time, data in forecast.items():
                 if time == 'etc': continue
@@ -446,83 +379,15 @@ Ultrafine detail
 
         return img, *texts
 
-    def portrait_step(self, latitude, longitude, **kwargs):
-        """Step func for portrait image gen."""
-        forecast = Weather('').get_info(lat_long=(latitude, longitude), just_now=True)
-        img, prompt = self.generate_image(forecast, resize=False, size=Image.Size.LARGE)
-        # TODO: Add text to img
-        width, height = img.size
-        background = PIL.Image.new("RGB", (width, height*2), "white")
-        background.paste(img, (0, height // 4))
-        background.paste(write_text_on_image_2(prompt, (width, height // 4)), (0, 0))
-        tz = find_timezone(latitude, longitude)
-        now = current_time_in_timezone(tz)
-        background.paste(write_text_on_image_2(f"{now}\n"+self.clean_text(forecast), (width, (3*height) // 4)), (0, (5*height) // 4))
-        return background, img, prompt, forecast
-
-
 # +
-# out = WeatherDraw().portrait_step(40.75, -74.0)
+# x = WeatherDraw()
+# out = x.step()
 # out[0]
 
 # +
-from numba import jit
-@jit
-def njit_find_nearest_palette_color(old_pixel, palette):
-    distances = np.sum((palette - old_pixel) ** 2, axis=1)
-    nearest_color_idx = np.argmin(distances)
-    return palette[nearest_color_idx]
-
-def apply_error_diffusion(image, palette, error_weights):
-    pixels = np.array(image).astype('float32')
-    width, height, _ = pixels.shape
-
-    for c in range(3):
-        for y in range(height):
-            for x in range(width):
-                old_pixel = pixels[x, y, c]
-                new_pixel = njit_find_nearest_palette_color(old_pixel, palette)
-                pixels[x, y, c] = new_pixel[c]  # Convert RGB color to integer for each channel
-
-                quant_error = old_pixel - new_pixel[c]  # Use the new_pixel value of the current channel
-
-                # Error propagation for each channel
-                for dy, dx, weight in error_weights:
-                    if 0 <= x + dx < width and 0 <= y + dy < height:
-                        pixels[x + dx, y + dy, c] += quant_error * weight
-
-    return PIL.Image.fromarray(pixels.astype(np.uint8))
-
-
-def floyd_steinberg_dithering(image, palette, error_weights):
-    dithered_image = apply_error_diffusion(image, palette, error_weights)
-    return dithered_image
-
-error_weights = [
-    (0, 1, 7/16),
-    (1, -1, 1/16),
-    (1, 0, 5/16),
-    (1, 1, 3/16)
-]
-colors = np.array([
-    (0, 0, 0),  # Black
-    (0, 1, 0),  # Green
-    (0, 1, 1),  # Blue
-    (1, 0, 0),  # Red
-    (1, 0, 1),  # Yellow
-    (1, 1, 0),  # Orange
-    (1, 1, 1),  # White
-]) * 255
-
-def disp_concat(*images):
-    concatenated_image = PIL.Image.new('RGB', (images[0].width * len(images), images[0].height))
-    for i, img in enumerate(images):
-        concatenated_image.paste(img, (images[0].width*i, 0))
-    
-    # Display the concatenated image
-    display.display(concatenated_image)
-
-get_7color = lambda img: PIL.Image.fromarray(np.array(colors[np.argmin(((np.array(img, dtype=float).reshape(-1, 3)[:, np.newaxis, :] - colors)**2).sum(axis=2), axis=1)].reshape(img.height, img.width, 3), dtype=np.uint8))
+# x.forecast
 # -
+
+
 
 

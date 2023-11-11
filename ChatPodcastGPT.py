@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.15.0
 #   kernelspec:
-#     display_name: '3.11'
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: '3.11'
+#     name: python3
 # ---
 
 # %%
@@ -19,7 +19,7 @@ import tiktoken
 import tempfile
 import IPython
 import enum
-import structlog
+import jonlog
 from gtts import gTTS
 import uuid
 import datetime as dt
@@ -27,6 +27,8 @@ import requests
 import concurrent.futures
 import base64
 from github import Github
+import time
+import threading
 import os
 import re
 import retrying
@@ -34,8 +36,36 @@ from xml.dom import minidom
 from xml.etree import ElementTree as ET
 import requests
 from bs4 import BeautifulSoup
-logger = structlog.getLogger()
+logger = jonlog.getLogger()
 openai.api_key = os.environ.get("OPENAI_KEY", None) or open('/Users/jong/.openai_key').read().strip()
+
+
+# %%
+class RateLimited:
+    def __init__(self, max_per_minute):
+        self.max_per_minute = max_per_minute
+        self.current_minute = time.strftime('%M')
+        self.lock = threading.Lock()
+        self.calls = 0
+
+    def __call__(self, fn):
+        def wrapper(*args, **kwargs):
+            run = False
+            with self.lock:
+                current_minute = time.strftime('%M')
+                if current_minute != self.current_minute:
+                    self.current_minute = current_minute
+                    self.calls = 0
+                if self.calls < self.max_per_minute:
+                    self.calls += 1
+                    run = True
+            if run:
+                return fn(*args, **kwargs)
+            else:
+                time.sleep(15)
+                return wrapper(*args, **kwargs)
+                    
+        return wrapper
 
 
 # %%
@@ -80,14 +110,40 @@ class GttsTTS:
 
 
 # %%
-DEFAULT_MODEL = 'gpt-4'
+class OpenAITTS:
+    """https://platform.openai.com/docs/guides/text-to-speech"""
+    WOMAN = 'nova'
+    MAN = 'echo'
+    def __init__(self, voice_id=None, model='tts-1'):
+        """Voices:
+        alloy, echo, fable, onyx, nova, and shimmer
+        Models:
+        tts-1, tts-1-hd
+        """
+        self.voice = voice_id
+        self.model = model
+
+    @RateLimited(95)
+    @jonlog.retry_with_logging()
+    def tts(self, text):
+        response = openai.OpenAI(api_key=openai.api_key).audio.speech.create(
+          model=self.model,
+          voice=self.voice,
+          input=text
+        )
+        return response.content
+
+
+# %%
+DEFAULT_MODEL = 'gpt-4-1106-preview'
+DEFAULT_LENGTH  = 120_000
 
 class Chat:
     class Model(enum.Enum):
         GPT3_5 = "gpt-3.5-turbo"
-        GPT_4  = "gpt-4"
+        GPT_4  = "gpt-4-1106-preview"
 
-    def __init__(self, system, max_length=4096//2):
+    def __init__(self, system, max_length=DEFAULT_LENGTH):
         self._system = system
         self._max_length = max_length
         self._history = [
@@ -116,7 +172,7 @@ class Chat:
 
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
     def _msg(self, *args, model=DEFAULT_MODEL, **kwargs):
-        return openai.ChatCompletion.create(
+        return openai.OpenAI(api_key=openai.api_key).chat.completions.create(
             *args,
             model=model,
             messages=self._history,
@@ -139,14 +195,16 @@ class Chat:
 
 # %%
 class PodcastChat(Chat):
-    def __init__(self, topic, podcast="award winning", max_length=4096//2, hosts=['Tom', 'Jen'], host_voices=[GttsTTS(GttsTTS.MAN), GttsTTS(GttsTTS.WOMAN)]):
-        system = f"You are an {podcast} podcast with hosts {hosts[0]} and {hosts[1]}."
+    def __init__(self, topic, podcast="award winning", max_length=DEFAULT_LENGTH, hosts=['Tom', 'Jen'], host_voices=[OpenAITTS(OpenAITTS.MAN), OpenAITTS(OpenAITTS.WOMAN)]):
+        system = f"""You are an {podcast} podcast with hosts {hosts[0]} and {hosts[1]}.
+Respond with the hosts names before each line like {hosts[0]}: and {hosts[1]}:""".replace("\n", " ")
         super().__init__(system, max_length=max_length)
         self._podcast = podcast
         self._topic = topic
         self._hosts = hosts
         self._history.append({
-            "role": "user", "content": f"Generate an informative and entertaining podcast episode about {topic}. Make sure to teach complex topics in an intuitive way."
+            "role": "user", "content": f"""Generate an informative and entertaining podcast episode about {topic}.
+Make sure to teach complex topics in an intuitive way.""".replace("\n", " ")
         })
         self._tts_h1, self._tts_h2 = host_voices
 
@@ -293,7 +351,7 @@ class PodcastRSSFeed:
 
 # %%
 class Episode:
-    def __init__(self, episode_type='narration', podcast_args=("JonathanGrant", "jonathangrant.github.io", "podcasts/podcast.xml"), **chat_kwargs):
+    def __init__(self, episode_type='narration', podcast_args=("JonathanGrant", "jonathangrant.github.io", "podcasts/podcast.xml"), text_model=DEFAULT_MODEL, **chat_kwargs):
         """
         Kinds of episodes:
             pure narration - simple TTS
@@ -304,6 +362,7 @@ class Episode:
         self.chat = PodcastChat(**chat_kwargs)
         self.chat_kwargs = chat_kwargs
         self.pod = PodcastRSSFeed(*podcast_args)
+        self.text_model = text_model
         self.sounds = []
         self.texts = []
 
@@ -315,7 +374,7 @@ Only return the parts and nothing else.
 Do not include a conclusion or intro.
 Do not write more than {n} parts.
 Format it like this: 1. insert-title-here... 2. another-title-here...""".replace("\n", " "))
-        resp = chat.message()
+        resp = chat.message(model=self.text_model)
         chapter_pattern = re.compile(r'\d+\.\s+.*')
         chapters = chapter_pattern.findall(resp)
         if not chapters:
@@ -328,18 +387,18 @@ Format it like this: 1. insert-title-here... 2. another-title-here...""".replace
         if self.episode_type == 'narration':
             outline = self.get_outline(msg, nparts)
             logger.info(f"Outline: {outline}")
-            intro_txt, intro_aud = self.chat.step(f"Write the intro for a podcast about {msg}. The outline for the podcast is {', '.join(outline)}. Only write the introduction.{include}")
+            intro_txt, intro_aud = self.chat.step(f"Write the intro for a podcast about {msg}. The outline for the podcast is {', '.join(outline)}. Only write the introduction.{include}", model=self.text_model)
             self.sounds.append(intro_aud)
             self.texts.append(intro_txt)
             # Get parts
             for part in outline:
                 logger.info(f"Part: {part}")
-                part_txt, part_aud = self.chat.step(f"Write the next part: {part}.{include}")
+                part_txt, part_aud = self.chat.step(f"Write the next part: {part}.{include}", model=self.text_model)
                 self.sounds.append(part_aud)
                 self.texts.append(part_txt)
             # Get conclusion
             logger.info("Conclusion")
-            part_txt, part_aud = self.chat.step(f"Write the conclusion. Remember, the outline was: {', '.join(outline)}.{include}")
+            part_txt, part_aud = self.chat.step(f"Write the conclusion. Remember, the outline was: {', '.join(outline)}.{include}", model=self.text_model)
             self.sounds.append(part_aud)
             self.texts.append(part_txt)
         elif self.episode_type == 'pure_tts':
@@ -357,32 +416,15 @@ Format it like this: 1. insert-title-here... 2. another-title-here...""".replace
                 f.write(b''.join(self.sounds))
             self.pod.upload_episode(tmppath, f"podcasts/audio/{title_small}.mp3", title, descr)
 
-
 # %%
 # # %%time
 # ep = Episode(
 #     episode_type='narration',
-#     topic="Logitech's Comprehensive and Aggressive Plan for Adoption of AI",
-#     host_voices=[ElevenLabsTTS(ElevenLabsTTS.MAN), ElevenLabsTTS(ElevenLabsTTS.WOMAN)],
+#     topic="Hidden History: Unraveling 7 of History's Mysteries - From the Great Emu War to the Green Children of Woolpit",
+#     max_length=120_000,
+#     text_model='gpt-4-1106-preview',
 # )
-# outline, txt = ep.step(nparts='five')
-# ep.upload("(5part V1) " + ep.chat._topic, '\n'.join(outline))
-
-# %%
-
-# %%
-
-# %%
-"""
-TODO:
-    - runtime voice choosing to include accented voices
-"""
-
-# %%
-"""
-TODO:
-    Make web server and send mp3 to frontend
-    Make frontend and play results
-"""
+# outline, txt = ep.step(nparts='7')
+# ep.upload("(New OpenAI APIs v1) " + ep.chat._topic[:200], '\n'.join(outline))
 
 # %%
