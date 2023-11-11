@@ -1,5 +1,5 @@
 import io
-from WeatherGPT import resize_img, get_7color, floyd_steinberg_dithering, colors, error_weights, WeatherDraw
+from WeatherGPT import WeatherDraw
 import PIL.Image
 
 
