@@ -190,7 +190,6 @@ Olm
 Opossum
 Orangutan
 Ostrich
-Otter
 Owl
 Ox
 Oyster
@@ -238,7 +237,6 @@ Salamander
 Salmon
 Sand Lizard
 Sea Lion
-Sea Otter
 Sea Turtle
 Seahorse
 Seal
@@ -260,6 +258,9 @@ Sperm Whale
 Spider Monkey
 Spiny Dogfish
 Sponge
+Chewbacca
+Ewok
+Spongebob
 Squid
 Squirrel
 Starfish
