@@ -1,281 +1,183 @@
-African Elephant
-African Wild Dog
-Aardvark
-Albatross
-Alligator
-Alpine Ibex
-American Bison
-Anaconda
-Angelfish
-Antelope
-Arctic Fox
-Arctic Wolf
-Armadillo
-Asiatic Black Bear
-Atlantic Puffin
-Aye-Aye
-Baboon
-Badger
-Bald Eagle
-Bandicoot
-Barn Owl
-Barracuda
-Barramundi Fish
-Basking Shark
-Bat
-Bearded Dragon
-Beaver
-Bengal Tiger
-Binturong
-Blue Jay
-Blue Whale
-Boa Constrictor
-Bobcat
-Bonito Fish
-Bonobo
-Booby
-Border Collie
-Bottlenose Dolphin
-Brazilian Terrier
-Brown Bear
-Budgerigar
-Buffalo
-Bull Shark
-Bulldog
-Bullfrog
-Bumblebee
-Butterfly
-Camel
-Capybara
-Caracal
-Carp
-Cassowary
-Cat
-Caterpillar
-Cheetah
-Chinchilla
-Chimpanzee
-Chough
-Cobra
-Cockroach
-Codfish
-Collie
-Coral
-Cougar
-Cow
-Crab
-Crane Bird
-Crocodile
-Cuttlefish
-Dachshund
-Dalmatian
-Deer
-Desert Locust
-Dingo
-Discus
-Dodo
-Dog
-Dugong
-Dunker
-Eagle
-Earthworm
-Echidna
-Elephant Seal
-Elk
-Emu
-Falcon
-Fennec Fox
-Finch
-Fire-Bellied Toad
-Flamingo
-Flying Squirrel
-Fox
-French Bulldog
-Frigatebird
-Frilled Lizard
-Frog
-Galapagos Penguin
-Gazelle
-Gecko
-German Shepherd
-Gibbon
-Giraffe
-Goldfish
-Goose
-Gopher
-Gorilla
-Grasshopper
-Great Dane
-Great White Shark
-Green Bee-Eater
-Green Tree Frog
-Grey Reef Shark
-Grizzly Bear
-Guinea Fowl
-Guinea Pig
-Guppy
-Hamster
-Hare
-Harpy Eagle
-Hedgehog
-Hermit Crab
-Hippopotamus
-Honey Bee
-Horse
-Housefly
-Hummingbird
-Humpback Whale
-Hyena
-Ibis
-Iguana
-Impala
-Indian Elephant
-Indian Rhinoceros
-Indri
-Insect
-Jack Russell Terrier
-Jaguar
-Japanese Macaque
-Jellyfish
-Kangaroo
-Keel Billed Toucan
-Killer Whale
-King Penguin
-Kingfisher
-Kiwi
-Koala
-Komodo Dragon
-Kookaburra
-Kudu
-Ladybird
-Lemming
-Lemur
-Leopard
-Lion
-Lizard
-Lobster
-Macaw
-Magpie
-Mallard
-Manatee
-Mandrill
-Manta Ray
-Marlin
-Mastiff
-Mayfly
-Meerkat
-Mole
-Monarch Butterfly
-Mongrel
-Monitor Lizard
-Monkey
-Moorhen
-Moose
-Moray Eel
-Mountain Gorilla
-Mouse
-Mule
+Axolotl
 Narwhal
-Neanderthal
-Newfoundland
-Newt
-Nightingale
-Nile Crocodile
-Numbat
-Nurse Shark
-Ocelot
-Octopus
-Okapi
-Olm
-Opossum
-Orangutan
-Ostrich
-Owl
-Ox
-Oyster
-Pademelon
-Panther
-Parrot
-Peacock
-Peafowl
-Penguin
-Persian cat
-Pheasant
-Pig
-Pigeon
-Pika
-Piranha
 Platypus
-Pointer
-Polar Bear
-Poodle
-Porcupine
-Praying Mantis
-Pufferfish
-Puma
-Quail
-Quetzal
+Aye-aye
+Blobfish
+Pangolin
+Dumbo Octopus
+Thorny Dragon
+Saiga Antelope
+Tufted Deer
+Okapi
+Red-Lipped Batfish
+Glass Frog
+Tardigrade (Water Bear)
+Star-Nosed Mole
+Pink Fairy Armadillo
+Fossa
+Glaucus Atlanticus (Blue Dragon)
+Vampire Squid
+Sun Bear
+Sunda Colugo (Flying Lemur)
+Yeti Crab
+Kakapo
+Goblin Shark
+Shoebill
+Jerboa
+Maned Wolf
+Leafy Seadragon
+Mimic Octopus
+Vaquita
+Olm
+Satanic Leaf-Tailed Gecko
+Pistol Shrimp
 Quokka
+Pygmy Marmoset
+Sloth Bear
+Axolotl Squid
+Dragon Moray Eel
+Coconut Crab
+Frill-Necked Lizard
+Markhor
+Patagonian Mara
+Proboscis Monkey
+Silkie Chicken
+Sparklemuffin (Peacock Spider)
+Tarsier
+Umbonia Spinosa (Thorn Bug)
+Wombat
+Zebra Duiker
+Amazonian Royal Flycatcher
+Binturong
+Cassowary
+Draco Lizard
+Electric Eel
+Fennec Fox
+Gerenuk
+Hoatzin
+Irrawaddy Dolphin
+Javan Rhinoceros
+Kiwi
+Lamprey
+Matamata Turtle
+Naked Mole-Rat
+Ocelot
+Purple Frog
 Quoll
-Rabbit
-Raccoon
-Rainbow Trout
-Rat
-Rattlesnake
 Red Panda
-Reindeer
-Rhinoceros
-River Turtle
-Robin
-Rockhopper Penguin
-Rooster
-Roseate Spoonbill
-Rottweiler
-Saber-Toothed Tiger
-Saint Bernard
-Salamander
-Salmon
-Sand Lizard
-Sea Lion
-Sea Turtle
-Seahorse
-Seal
 Serval
-Sheep
-Shih Tzu
-Shrimp
-Siberian Husky
-Siberian Tiger
-Silver Dollar
-Skunk
-Sloth
-Snail
-Snake
-Snow Leopard
-Snowy Owl
-Song Thrush
-Sperm Whale
-Spider Monkey
-Spiny Dogfish
-Sponge
+Tasmanian Devil
+Uakari
+Venezuelan Poodle Moth
+Walrus
+Xenopus Frog
+Yellow-Eyed Penguin
+Zorilla
+Chimera (Mythical)
+Griffin
+Unicorn
+Phoenix
+Cthulhu (Fictional)
+Loch Ness Monster
+Bigfoot
+Pegasus
+Sphinx
+Kraken
+Mothman
+Werewolf
+Dragon
+Yeti
+Basilisk
+Centaur
+Minotaur
+Mermaid
+Leviathan
+Roc
+Chupacabra
+Hydra
+Gargoyle
+Elf (Fantasy)
+Fairy
+Bandersnatch
+Barreleye Fish
+Blue Footed Booby
+Cockatrice
+Dementor Wasp
+Echidna
+Ent (Fantasy)
+Falkor (The Neverending Story)
+Ghoul
+Hippogriff
+Ibex
+Jackalope
+Kelpie
+Liger
+Manticore
+Niffler (Harry Potter)
+Orang Pendek
+Potoo Bird
+Quetzalcoatl (Mythology)
+Rat King
+Skunk Ape
+Troll
+Umbra (Fantasy)
+Valkyrie (Mythology)
+Wendigo
+Xolotl (Mythology)
+Yowie
+Ziz (Jewish Mythology)
+Alicorn
+Baku (Mythology)
+Cerberus
+Djinn
+Empusa (Mythology)
+Flying Spaghetti Monster
+Gorgon
+Hodag
+Imp
+JÃ¶rmungandr (Norse Mythology)
+Krampus
+Leshy (Slavic Mythology)
+Mokele-Mbembe
+Nemean Lion
+Ouroboros
+Pixiu (Chinese Mythology)
+Qilin (Chinese Mythology)
+Roc (Mythology)
+Sphinx (Mythology)
+Thunderbird (Mythology)
+Undine (Mythology)
+Vegetable Lamb of Tartary
+Will-o'-the-wisp
+Xing Tian (Chinese Mythology)
+Yeth Hound
+Zombie
+Angha (Persian Mythology)
+Barghest
+Cryptid
+Dullahan
+Ebu Gogo
+Firedrake
+Ghast
+Harpy
+Incubus
+Jabberwocky
+Kaiju
+Lamassu
+Mogwai (Chinese Culture)
+Nuckelavee
+Ogopogo
+PÃºca
+Quinotaur
+Re'em
+Selkie
+Tikbalang
+Umdhlebi
+Vetala
+Warg
+Xana (Asturian Mythology)
+Yara-ma-yha-who
+Zuvembie
 Chewbacca
 Ewok
 Spongebob
-Squid
-Squirrel
-Starfish
-Steller's Sea Cow
-Stingray
-Stork
-Sumatran Elephant
-Sumatran Orangutan
-Sumatran Rhinoceros
-Sumatran Tiger
-Sun Bear
-Swan
-Tasmanian Devil
-Tawny Owl
-Termite
-Tetra
-Thorny Devil
-Tiger Shark
