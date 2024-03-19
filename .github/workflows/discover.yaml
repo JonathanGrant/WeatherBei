@@ -31,6 +31,7 @@ jobs:
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
         DALLE3_COOKIE: ${{ secrets.DALLE3_COOKIE }}
         GMAPS_API: ${{ secrets.GMAPS_API }}
+        SD_APIKEY: ${{ secrets.SD_APIKEY }}
 
     - name: Commit and push if it changed
       run: | 

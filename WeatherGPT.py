@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.0
+#       jupytext_version: 1.15.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -44,6 +44,8 @@ art_styles = [x.strip() for x in open('art_styles.txt').readlines()]
 font_path = hf_hub_download("jonathang/fonts-ttf", "Vogue.ttf")
 other_font_path = hf_hub_download("ybelkada/fonts", "Arial.TTF")
 mono_font_path = hf_hub_download("jonathang/fonts-ttf", "DejaVuSansMono.ttf")
+SD_APIKEY = os.environ.get("SD_APIKEY") or open(os.path.expanduser("~/.stability_apikey")).read().strip()
+ARTISTS = open("artists.txt").read().splitlines()
 
 # +
 import cachetools
@@ -111,20 +113,102 @@ class Weather:
         return new_data
 
 
+# +
+# class Image:
+#     class Size(enum.Enum):
+#         SMALL = "256x256"
+#         MEDIUM = "512x512"
+#         LARGE = "1024x1024"
+
+#     @classmethod
+#     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
+#     def create(cls, prompt, n=1, size=Size.LARGE):
+#         logger.info('requesting openai.Image...')
+#         resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size.value, model="dall-e-3", response_format='b64_json', timeout=45)
+#         logger.info('received openai.Image...')
+#         return resp.data[0].b64_json
+
 class Image:
-    class Size(enum.Enum):
-        SMALL = "256x256"
-        MEDIUM = "512x512"
-        LARGE = "1024x1024"
+    SIZE = {
+        "DALLE2_SMALL": "256x256",
+        "DALLE2_MEDIUM": "512x512",
+        "DALLE2_LARGE": "1024x1024",
+        "DALLE3_SQUARE": "1024x1024",
+        "DALLE3_HORIZONTAL": "1792x1024",
+        "FOFR_MEDIUM": "512x512",
+        "FOFR_HORIZONTAL": "960x480",
+        "SDXL": "1024x1024",
+    }
+    MODEL = {
+        "2": "dall-e-2",
+        "3": "dall-e-3",
+        "fofr": "fofr",
+        "SDXL": "SDXL",
+    }
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, size=Size.LARGE):
-        logger.info('requesting openai.Image...')
-        resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size.value, model="dall-e-3", response_format='b64_json', timeout=45)
-        logger.info('received openai.Image...')
-        return resp.data[0].b64_json
+    def create(cls, prompt, n=1, model=MODEL["SDXL"], size=SIZE["SDXL"]):
+        logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
+        if model.startswith("dall-e"):
+            resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size, model=model, response_format="b64_json", timeout=45)
+            resp = resp.data[0].b64_json
+        elif model.startswith("SD"):
+            url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+            w, h = size.split('x')
+            body = {
+              "steps": 40,
+              "width": int(w),
+              "height": int(h),
+              "cfg_scale": 5,
+              "samples": n,
+              "text_prompts": [
+                {"text": prompt, "weight": 1},
+                {"text": "blurry, bad, ugly", "weight": -1},
+              ],
+            }
+            headers = {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "Authorization": f"Bearer {SD_APIKEY}",
+            }
+            response = requests.post(
+              url,
+              headers=headers,
+              json=body,
+            )
+            if response.status_code != 200:
+                raise Exception("Non-200 response: " + str(response.text))
+            data = response.json()
+            res = [img["base64"] for img in data["artifacts"]]
+            if n == 1:
+                return res[0]
+        else:
+            width, height = size.split('x')
+            width, height = int(width), int(height)
+            replicate_api_key = os.environ.get("REPLICATE_APIKEY") or open("/Users/jong/.replicate_apikey").read().strip()
+            resp = requests.post(
+                "https://api.replicate.com/v1/predictions",
+                headers={"Content-Type": "application/json", "Authorization": f"Token {replicate_api_key}"},
+                json={"version": "a83d4056c205f4f62ae2d19f73b04881db59ce8b81154d314dd34ab7babaa0f1", "input": {
+                    "prompt": prompt,
+                    "width": width, "height": height,
+                    "num_images": n,
+                }},
+            )
+            resp = resp.json()
+            while resp.get("status", "fail").lower() not in {"fail", "succeeded"}:
+                logger.info(f"Sleeping 1...")
+                time.sleep(1)
+                resp = requests.get(f"https://api.replicate.com/v1/predictions/{resp['id']}", headers={"Content-Type": "application/json", "Authorization": f"Token {replicate_api_key}"})
+                resp = resp.json()
+            image_data = requests.get(resp['output'][0]).content
+            resp = base64.b64encode(image_data).decode()
+        logger.info('received Image...')
+        return resp
 
+
+# -
 
 def overlay_text_on_image(img, text, position, text_color=(255, 255, 255), box_color=(0, 0, 0), decode=False):
     # Convert the base64 string back to an image
@@ -307,12 +391,13 @@ def current_time_in_timezone(timezone_str):
     return formatted_time
 
 
-# -
+# +
+DEFAULT_MODEL = 'gpt-3.5-turbo'  # gpt-4-1106-preview
 
 class WeatherDraw:
     def clean_text(self, weather_info):
         chat = Chat("Given the following weather conditions, write a very small, concise plaintext summary. Just include the weather, no dates.")
-        text = chat.message(str(weather_info)[:4000], model='gpt-4-1106-preview')
+        text = chat.message(str(weather_info)[:4000], model=DEFAULT_MODEL)
         return text
 
     def generate_image(self, weather_info, resize=True, **kwargs):
@@ -320,16 +405,17 @@ class WeatherDraw:
         num_animals = random.randint(1, 3)
         logger.info(f"Got animal {animal}")
         chat = Chat(f'''Given
-the following weather conditions, write a plaintext, short, and vivid description of an
+the following weather conditions, write a plaintext and concise description of an
 image of {num_animals} adorable anthropomorphised {animal}{"s" if num_animals > 1 else ""} doing an activity in the weather.
 The image should make obvious what the weather is.
 The animal should be extremely anthropomorphised.
 Only write the short description and nothing else.
 Do not include specific numbers.'''.replace('\n', ' '))
-        description = chat.message(str(weather_info)[:4000], model='gpt-4-1106-preview')
+        description = chat.message(str(weather_info)[:4000], model=DEFAULT_MODEL)
         prompt = description
         if weather_info.get('location') is not None:
             prompt += f' {weather_info["location"]} background.'
+        prompt += f' 8k quality. In the style of {random.choice(ARTISTS)}'
         logger.info(prompt)
         img = Image.create(prompt, **kwargs)
         img_bytes = base64.b64decode(img)
@@ -350,9 +436,9 @@ Do not include specific numbers.'''.replace('\n', ' '))
     def left_text_img(self, weather_data):
         now = datetime.datetime.now().astimezone(zoneinfo.ZoneInfo("US/Eastern"))
         animal = random.choice(animals)
-        chat = Chat(f'Give me a concise, rare, cute, fun fact about the animal, {animal}.')
+        chat = Chat(f'Give me a small, concise, rare, cute, fun fact about an animal.')
         return write_text_on_image(
-            f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message(model="gpt-4-1106-preview")}',
+            f'{now:%Y-%m-%d}\n{now:%H:%M}\n\n{chat.message(animal, model=DEFAULT_MODEL)}',
             ((800-480)//2, 480),
         )
 
@@ -380,8 +466,9 @@ Do not include specific numbers.'''.replace('\n', ' '))
         return img, *texts
 
 # +
+# # %%time
 # x = WeatherDraw()
-# out = x.step()
+# out = x.step(zip_code='10001')
 # out[0]
 
 # +
