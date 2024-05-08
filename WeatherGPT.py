@@ -403,14 +403,12 @@ class WeatherDraw:
     def generate_image(self, weather_info, resize=True, **kwargs):
         animal = random.choice(animals)
         num_animals = random.randint(1, 3)
-        animal = "sloth"
         logger.info(f"Got animal {animal}")
         chat = Chat(f'''Given
 the following weather conditions, write a plaintext and concise description of an
 image of {num_animals} adorable anthropomorphised {animal}{"s" if num_animals > 1 else ""} doing an activity in the weather.
 The image should make obvious what the weather is.
 The animal should be extremely anthropomorphised.
-It is their birthday and they are celebrating.
 Only write the short description and nothing else.
 Do not include specific numbers.'''.replace('\n', ' '))
         description = chat.message(str(weather_info)[:4000], model=DEFAULT_MODEL)
