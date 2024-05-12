@@ -135,13 +135,13 @@ class OpenAITTS:
 
 
 # %%
-DEFAULT_MODEL = 'gpt-4-1106-preview'
+DEFAULT_MODEL = 'gpt-4-turbo-preview'
 DEFAULT_LENGTH  = 120_000
 
 class Chat:
     class Model(enum.Enum):
         GPT3_5 = "gpt-3.5-turbo"
-        GPT_4  = "gpt-4-1106-preview"
+        GPT_4  = "gpt-4-turbo-preview"
 
     def __init__(self, system, max_length=DEFAULT_LENGTH):
         self._system = system
