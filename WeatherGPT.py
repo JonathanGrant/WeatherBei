@@ -392,7 +392,7 @@ def current_time_in_timezone(timezone_str):
 
 
 # +
-DEFAULT_MODEL = 'gpt-3.5-turbo'  # gpt-4-1106-preview
+DEFAULT_MODEL = 'gpt-4o-mini'  # gpt-4-1106-preview
 
 class WeatherDraw:
     def clean_text(self, weather_info):
