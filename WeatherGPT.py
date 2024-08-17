@@ -426,7 +426,7 @@ class WeatherDraw:
         text = chat.message(str(weather_info)[:4000], model=DEFAULT_MODEL)
         return text
 
-    def generate_image(self, weather_info, resize=True, **kwargs):
+    def generate_image(self, weather_info, resize=False, **kwargs):
         animal = random.choice(animals)
         num_animals = random.randint(1, 3)
         logger.info(f"Got animal {animal}")
@@ -446,7 +446,7 @@ Do not include specific numbers.'''.replace('\n', ' '))
         img = Image.create(prompt, **kwargs)
         img_bytes = base64.b64decode(img)
         img = PIL.Image.open(BytesIO(img_bytes))
-        img = img.resize((256, 256))
+        #img = img.resize((256, 256))
         return img, prompt
 
     def step_one_forecast(self, weather_info, **kwargs):
