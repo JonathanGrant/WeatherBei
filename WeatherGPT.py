@@ -356,27 +356,35 @@ def write_text_on_image_2(text, image_size):
 # -
 
 def resize_img(img):
-    # Define target size
-    target_width, target_height = 800, 480
-    # Calculate the aspect ratio
-    aspect_ratio = img.width / img.height
-    # Determine new size while keeping aspect ratio
-    if aspect_ratio > target_width / target_height:
-        new_width = target_width
-        new_height = int(new_width / aspect_ratio)
-    else:
-        new_height = target_height
-        new_width = int(new_height * aspect_ratio)
+    # Define the target dimensions for the 2048x2048 image
+    target_size = 2048
 
-    # Resize the image
-    resized_image = img.resize((new_width, new_height), PIL.Image.LANCZOS)
-    # Create a black background
-    background = PIL.Image.new("RGB", (target_width, target_height), "white")
+    # The aspect ratio of the desired container (800x480)
+    container_width, container_height = 800, 480
+    container_aspect_ratio = container_width / container_height
+
+    # Scale up the container dimensions to fit the 2048x2048 image
+    if container_aspect_ratio > 1:
+        container_new_width = target_size
+        container_new_height = int(container_new_width / container_aspect_ratio)
+    else:
+        container_new_height = target_size
+        container_new_width = int(container_new_height * container_aspect_ratio)
+
+    # Resize the original image to 2048x2048
+    resized_image = img.resize((target_size, target_size), PIL.Image.LANCZOS)
+
+    # Create a white background with the scaled container dimensions
+    background = PIL.Image.new("RGB", (container_new_width, container_new_height), "white")
+
     # Calculate the position to paste the resized image onto the background
-    position = ((target_width - new_width) // 2, (target_height - new_height) // 2)
+    position = ((container_new_width - target_size) // 2, (container_new_height - target_size) // 2)
+
     # Paste the resized image onto the background
     background.paste(resized_image, position)
+
     return background
+
 
 
 # +
@@ -478,8 +486,17 @@ Do not include specific numbers.'''.replace('\n', ' '))
                 texts[ridx] = txt
 
         img = resize_img(create_collage(*images))
-        img.paste(self.weather_img(forecast), (480+160, 0))
-        img.paste(self.left_text_img(forecast), (0, 0))
+        # Assuming container dimensions were scaled to fit the 2048x2048 image
+        # Calculate new positions based on the scaled container
+        container_width, container_height = 2048, 2048  # Assuming the full 2048x2048 size is being used
+        
+        # Calculate new x, y positions
+        weather_img_position = (container_width - 160, 0)  # Update this according to your needs
+        left_text_img_position = (0, 0)  # Assuming this remains unchanged
+        
+        # Paste images in the new locations
+        img.paste(self.weather_img(forecast), weather_img_position)
+        img.paste(self.left_text_img(forecast), left_text_img_position)
 
         return img, *texts
 
