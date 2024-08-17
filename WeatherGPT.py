@@ -138,21 +138,25 @@ class Image:
         "FOFR_MEDIUM": "512x512",
         "FOFR_HORIZONTAL": "960x480",
         "SDXL": "1024x1024",
+        "FLUXSCHNELL_SQUARE": "1024x1024",
     }
     MODEL = {
         "2": "dall-e-2",
         "3": "dall-e-3",
         "fofr": "fofr",
         "SDXL": "SDXL",
+        "flux-schnell": "flux-schnell",
     }
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, model=MODEL["SDXL"], size=SIZE["SDXL"]):
+    def create(cls, prompt, n=1, model=MODEL["flux-schnell"], size=SIZE["FLUXSCHNELL_SQUARE"]):
         logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
+        
         if model.startswith("dall-e"):
             resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size, model=model, response_format="b64_json", timeout=45)
             resp = resp.data[0].b64_json
+        
         elif model.startswith("SD"):
             url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
             w, h = size.split('x')
@@ -172,30 +176,42 @@ class Image:
               "Content-Type": "application/json",
               "Authorization": f"Bearer {SD_APIKEY}",
             }
-            response = requests.post(
-              url,
-              headers=headers,
-              json=body,
-            )
+            response = requests.post(url, headers=headers, json=body)
             if response.status_code != 200:
                 raise Exception("Non-200 response: " + str(response.text))
             data = response.json()
             res = [img["base64"] for img in data["artifacts"]]
             if n == 1:
                 return res[0]
-        else:
+        
+        else:  # Handle all Replicate models in a unified way
             width, height = size.split('x')
             width, height = int(width), int(height)
             replicate_api_key = os.environ.get("REPLICATE_APIKEY") or open("/Users/jong/.replicate_apikey").read().strip()
-            resp = requests.post(
-                "https://api.replicate.com/v1/predictions",
-                headers={"Content-Type": "application/json", "Authorization": f"Token {replicate_api_key}"},
-                json={"version": "a83d4056c205f4f62ae2d19f73b04881db59ce8b81154d314dd34ab7babaa0f1", "input": {
-                    "prompt": prompt,
-                    "width": width, "height": height,
-                    "num_images": n,
-                }},
-            )
+            if model == "flux-schnell":
+                url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
+                json_payload = {
+                    "input": {
+                        "prompt": prompt,
+                        "num_outputs": n,
+                        "aspect_ratio": "1:1",  # Assuming square output for simplicity
+                        "output_format": "webp",
+                        "output_quality": 90
+                    }
+                }
+            else:
+                url = "https://api.replicate.com/v1/predictions"
+                json_payload = {
+                    "version": "a83d4056c205f4f62ae2d19f73b04881db59ce8b81154d314dd34ab7babaa0f1",
+                    "input": {
+                        "prompt": prompt,
+                        "width": width,
+                        "height": height,
+                        "num_images": n,
+                    }
+                }
+
+            resp = requests.post(url, headers={"Content-Type": "application/json", "Authorization": f"Token {replicate_api_key}"}, json=json_payload)
             resp = resp.json()
             while resp.get("status", "fail").lower() not in {"fail", "succeeded"}:
                 logger.info(f"Sleeping 1...")
@@ -204,8 +220,10 @@ class Image:
                 resp = resp.json()
             image_data = requests.get(resp['output'][0]).content
             resp = base64.b64encode(image_data).decode()
+        
         logger.info('received Image...')
         return resp
+
 
 
 # -
