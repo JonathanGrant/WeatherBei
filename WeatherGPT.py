@@ -485,19 +485,7 @@ Do not include specific numbers.'''.replace('\n', ' '))
                 images[ridx] = overlay_text_on_image(img, time, 'top-right', decode=False)
                 texts[ridx] = txt
 
-        img = resize_img(create_collage(*images))
-        # Assuming container dimensions were scaled to fit the 2048x2048 image
-        # Calculate new positions based on the scaled container
-        container_width, container_height = 2048, 2048  # Assuming the full 2048x2048 size is being used
-        
-        # Calculate new x, y positions
-        weather_img_position = (container_width - 160, 0)  # Update this according to your needs
-        left_text_img_position = (0, 0)  # Assuming this remains unchanged
-        
-        # Paste images in the new locations
-        img.paste(self.weather_img(forecast), weather_img_position)
-        img.paste(self.left_text_img(forecast), left_text_img_position)
-
+        img = create_collage(*images)
         return img, *texts
 
 # +
