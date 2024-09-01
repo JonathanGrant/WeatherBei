@@ -1,183 +1,221 @@
+wookie
+spongebob
+baby yoda
+sloth
+goat
+sheep
+cow
+hyland cow
+martian
+alien
+pokemon
+manta ray
 Axolotl
-Narwhal
-Platypus
-Aye-aye
-Blobfish
 Pangolin
-Dumbo Octopus
-Thorny Dragon
-Saiga Antelope
-Tufted Deer
-Okapi
-Red-Lipped Batfish
-Glass Frog
-Tardigrade (Water Bear)
-Star-Nosed Mole
-Pink Fairy Armadillo
-Fossa
-Glaucus Atlanticus (Blue Dragon)
-Vampire Squid
-Sun Bear
-Sunda Colugo (Flying Lemur)
-Yeti Crab
-Kakapo
-Goblin Shark
-Shoebill
-Jerboa
-Maned Wolf
-Leafy Seadragon
-Mimic Octopus
-Vaquita
-Olm
-Satanic Leaf-Tailed Gecko
-Pistol Shrimp
-Quokka
-Pygmy Marmoset
-Sloth Bear
-Axolotl Squid
-Dragon Moray Eel
-Coconut Crab
-Frill-Necked Lizard
-Markhor
-Patagonian Mara
-Proboscis Monkey
-Silkie Chicken
-Sparklemuffin (Peacock Spider)
+Mandrill
+Potoo
 Tarsier
-Umbonia Spinosa (Thorn Bug)
-Wombat
-Zebra Duiker
-Amazonian Royal Flycatcher
-Binturong
-Cassowary
-Draco Lizard
-Electric Eel
-Fennec Fox
+Naked mole rat
+Platypus
+Leafy seadragon
+Gharial
+Shoebill stork
+Okapi
+Proboscis monkey
+Frill-necked lizard
+Narwhal
+Blobfish
+Red-lipped batfish
+Dumbo octopus
+Star-nosed mole
+Aye-aye
+Saiga antelope
+Glaucus atlanticus (blue sea slug)
 Gerenuk
+Goblin shark
+Venezuelan poodle moth
+Barreleye fish
+Giant isopod
+Sunda colugo
+Lowland streaked tenrec
+Tardigrade (water bear)
+Mantis shrimp
+Raccoon dog
+Lyrebird
+Kakapo
 Hoatzin
-Irrawaddy Dolphin
-Javan Rhinoceros
-Kiwi
-Lamprey
-Matamata Turtle
-Naked Mole-Rat
-Ocelot
-Purple Frog
-Quoll
-Red Panda
+Tapir
+Coatimundi
+Kinkajou
+Binturong
+Fossa
+Dhole
+Markhor
+Takin
+Gemsbok
 Serval
-Tasmanian Devil
-Uakari
-Venezuelan Poodle Moth
-Walrus
-Xenopus Frog
-Yellow-Eyed Penguin
+Caracal
+Ocelot
+Jaguarundi
+Clouded leopard
+Margay
+Pallas's cat
+Fishing cat
+Sunda clouded leopard
+Oncilla
+Kodkod
+Black-footed cat
+Sand cat
+Rusty-spotted cat
+Marbled cat
+Flat-headed cat
+Andean mountain cat
+Chinese mountain cat
+Eurasian lynx
+Iberian lynx
+Canada lynx
+Bobcat
+Cheetah
+Aardwolf
+Maned wolf
+Bush dog
+Dingo
+African wild dog
+Fennec fox
+Bat-eared fox
+Tibetan sand fox
+Crab-eating fox
+Darwin's fox
+Island fox
+Arctic fox
+Ethiopian wolf
+Red wolf
+Golden jackal
+Side-striped jackal
+Black-backed jackal
+Coyote
+Spectacled bear
+Sun bear
+Sloth bear
+Andean bear
+Polar bear
+Giant panda
+Red panda
+Binturong
+Kinkajou
+Olingo
+Cacomistle
+Coatimundi
+Pygmy raccoon
+Crab-eating raccoon
+Ringtail
+White-nosed coati
+Mountain coati
+Tayra
+Grison
+Honey badger
+Wolverine
+Sea otter
+Giant otter
+Spotted-necked otter
+Asian small-clawed otter
+Marine otter
+Neotropical otter
+African clawless otter
+European otter
+Smooth-coated otter
+Hairy-nosed otter
+North American river otter
+Southern river otter
+Japanese river otter
+Stoat
+Least weasel
+Long-tailed weasel
+Siberian weasel
+Japanese weasel
+Back-striped weasel
+Yellow-bellied weasel
+Mountain weasel
+Steppe polecat
+European polecat
+Marbled polecat
+Saharan striped polecat
 Zorilla
-Chimera (Mythical)
-Griffin
-Unicorn
-Phoenix
-Cthulhu (Fictional)
-Loch Ness Monster
-Bigfoot
-Pegasus
-Sphinx
-Kraken
-Mothman
-Werewolf
-Dragon
-Yeti
-Basilisk
-Centaur
-Minotaur
-Mermaid
-Leviathan
-Roc
-Chupacabra
-Hydra
-Gargoyle
-Elf (Fantasy)
-Fairy
-Bandersnatch
-Barreleye Fish
-Blue Footed Booby
-Cockatrice
-Dementor Wasp
+Ferret-badger
+Teledu
+American badger
+European badger
+Hog badger
+Honey badger
+Japanese badger
+Babirusa
+Warthog
+Red river hog
+Giant forest hog
+Pygmy hippopotamus
+Lowland tapir
+Mountain tapir
+Malayan tapir
+Baird's tapir
+Indian rhinoceros
+Javan rhinoceros
+Sumatran rhinoceros
+Black rhinoceros
+White rhinoceros
+Przewalski's horse
+African wild ass
+Asiatic wild ass
+Kiang
+Onager
+Grevy's zebra
+Mountain zebra
+Plains zebra
+Malayan porcupine
+North American porcupine
+Brazilian porcupine
+African brush-tailed porcupine
+Crested porcupine
+Hedgehog
+Tenrec
 Echidna
-Ent (Fantasy)
-Falkor (The Neverending Story)
-Ghoul
-Hippogriff
-Ibex
-Jackalope
-Kelpie
-Liger
-Manticore
-Niffler (Harry Potter)
-Orang Pendek
-Potoo Bird
-Quetzalcoatl (Mythology)
-Rat King
-Skunk Ape
-Troll
-Umbra (Fantasy)
-Valkyrie (Mythology)
-Wendigo
-Xolotl (Mythology)
-Yowie
-Ziz (Jewish Mythology)
-Alicorn
-Baku (Mythology)
-Cerberus
-Djinn
-Empusa (Mythology)
-Flying Spaghetti Monster
-Gorgon
-Hodag
-Imp
-JÃ¶rmungandr (Norse Mythology)
-Krampus
-Leshy (Slavic Mythology)
-Mokele-Mbembe
-Nemean Lion
-Ouroboros
-Pixiu (Chinese Mythology)
-Qilin (Chinese Mythology)
-Roc (Mythology)
-Sphinx (Mythology)
-Thunderbird (Mythology)
-Undine (Mythology)
-Vegetable Lamb of Tartary
-Will-o'-the-wisp
-Xing Tian (Chinese Mythology)
-Yeth Hound
-Zombie
-Angha (Persian Mythology)
-Barghest
-Cryptid
-Dullahan
-Ebu Gogo
-Firedrake
-Ghast
-Harpy
-Incubus
-Jabberwocky
-Kaiju
-Lamassu
-Mogwai (Chinese Culture)
-Nuckelavee
-Ogopogo
-PÃºca
-Quinotaur
-Re'em
-Selkie
-Tikbalang
-Umdhlebi
-Vetala
-Warg
-Xana (Asturian Mythology)
-Yara-ma-yha-who
-Zuvembie
-Chewbacca
-Ewok
-Spongebob
+Aardvark
+Pangolin
+Armadillo
+Anteater
+Sloth
+Capybara
+Pacarana
+Agouti
+Paca
+Mara
+Viscacha
+Chinchilla
+Degu
+Tuco-tuco
+Coypu
+Hutia
+Cane rat
+Springhare
+Jerboa
+Kangaroo rat
+Gundi
+Dassie rat
+Mole-rat
+Spalax
+Plateau zokor
+Bamboo rat
+Muskrat
+Beaver
+Flying squirrel
+Prairie dog
+Marmot
+Groundhog
+Chipmunk
+Ground squirrel
+Tree squirrel
+Dormouse
+Pygmy dormouse
+Fat dormouse
+African dormouse
+Spiny dormouse
+Japanese dormouse​​​​​​​​​​​​​​​​
