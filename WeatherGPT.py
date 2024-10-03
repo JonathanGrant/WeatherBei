@@ -428,7 +428,7 @@ class WeatherDraw:
 
     def generate_image(self, weather_info, resize=False, **kwargs):
         animal = random.choice(animals)
-        num_animals = random.randint(1, 3)
+        num_animals = random.randint(2, 6)
         logger.info(f"Got animal {animal}")
         chat = Chat(f'''Given
 the following weather conditions, write a plaintext and concise description of an
