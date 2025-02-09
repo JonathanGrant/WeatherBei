@@ -7,7 +7,7 @@ def get_weather_image(zip_code='10001'):
     image = WeatherDraw().step(zip_code)[0]
     return image
 
-def run(zip_code='89451'):
+def run(zip_code='10001'):
     img = get_weather_image(zip_code=zip_code)
     img.save('latest_raw.jpg')
 
