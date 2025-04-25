@@ -155,7 +155,7 @@ class Image:
         logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
         
         if model.startswith("dall-e") or model.startswith("gpt"):
-            resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size, model=model, response_format="b64_json", timeout=45)
+            resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, size=size, model=model)
             resp = resp.data[0].b64_json
         
         elif model.startswith("SD"):
