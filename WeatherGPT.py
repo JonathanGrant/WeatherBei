@@ -143,6 +143,7 @@ class Image:
     MODEL = {
         "2": "dall-e-2",
         "3": "dall-e-3",
+        "gpt": "gpt-image-1",
         "fofr": "fofr",
         "SDXL": "SDXL",
         "flux-schnell": "flux-schnell",
@@ -150,10 +151,10 @@ class Image:
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, model=MODEL["flux-schnell"], size=SIZE["FLUXSCHNELL_SQUARE"]):
+    def create(cls, prompt, n=1, model=MODEL["gpt"], size=SIZE["FLUXSCHNELL_SQUARE"]):
         logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
         
-        if model.startswith("dall-e"):
+        if model.startswith("dall-e") or model.startswith("gpt"):
             resp = openai.OpenAI(api_key=openai.api_key).images.generate(prompt=prompt, n=n, size=size, model=model, response_format="b64_json", timeout=45)
             resp = resp.data[0].b64_json
         
