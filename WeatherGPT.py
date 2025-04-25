@@ -442,7 +442,7 @@ Do not include specific numbers.'''.replace('\n', ' '))
         prompt = description
         if weather_info.get('location') is not None:
             prompt += f' {weather_info["location"]} background.'
-        prompt += f' 8k quality. In the style of {random.choice(ARTISTS)}'
+        #prompt += f' 8k quality. In the style of {random.choice(ARTISTS)}'
         logger.info(prompt)
         img = Image.create(prompt, **kwargs)
         img_bytes = base64.b64decode(img)
