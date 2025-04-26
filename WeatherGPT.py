@@ -151,7 +151,7 @@ class Image:
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, model=MODEL["gpt"], size=SIZE["DALLE3_SQUARE"]):
+    def create(cls, prompt, n=1, model=MODEL["flux-schnell"], size=SIZE["DALLE3_SQUARE"]):
         logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
         
         if model.startswith("dall-e") or model.startswith("gpt"):
