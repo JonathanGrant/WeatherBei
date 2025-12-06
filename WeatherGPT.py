@@ -224,7 +224,11 @@ class Image:
                 resp = resp.json()
             if resp.get("status") != "succeeded" or not resp.get("output"):
                 raise RuntimeError(f"Replicate request failed: {resp}")
-            image_data = requests.get(resp['output'][0]).content
+            output_location = resp.get('output')
+            if isinstance(output_location, list):
+                output_location = output_location[0]
+            if not isinstance (output_location, str): raise RuntimeError (f"Unexpected replicate output: {output_location}")
+            image_data = requests. get(output_location).content
             resp = base64.b64encode(image_data).decode()
         
         logger.info('received Image...')
