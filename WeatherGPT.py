@@ -32,6 +32,7 @@ import datetime
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
+import math
 from ChatPodcastGPT import Chat
 import concurrent.futures
 from huggingface_hub import hf_hub_download
@@ -138,7 +139,7 @@ class Image:
         "FOFR_MEDIUM": "512x512",
         "FOFR_HORIZONTAL": "960x480",
         "SDXL": "1024x1024",
-        "FLUXSCHNELL_SQUARE": "1024x1024",
+        "FLUX2_SQUARE": "1024x1024",
     }
     MODEL = {
         "2": "dall-e-2",
@@ -146,12 +147,12 @@ class Image:
         "gpt": "gpt-image-1",
         "fofr": "fofr",
         "SDXL": "SDXL",
-        "flux-schnell": "flux-schnell",
+        "flux-2-dev": "flux-2-dev",
     }
 
     @classmethod
     @retrying.retry(stop_max_attempt_number=5, wait_fixed=2000)
-    def create(cls, prompt, n=1, model=MODEL["flux-schnell"], size=SIZE["DALLE3_SQUARE"]):
+    def create(cls, prompt, n=1, model=MODEL["flux-2-dev"], size=SIZE["DALLE3_SQUARE"]):
         logger.info(f'requesting Image with prompt={prompt}, n={n}, model={model}, size={size}...')
         
         if model.startswith("dall-e") or model.startswith("gpt"):
@@ -189,13 +190,15 @@ class Image:
             width, height = size.split('x')
             width, height = int(width), int(height)
             replicate_api_key = os.environ.get("REPLICATE_APIKEY") or open("/Users/jong/.replicate_apikey").read().strip()
-            if model == "flux-schnell":
-                url = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions"
+            if model in {"flux-schnell", "flux-2-dev"}:
+                aspect_ratio_gcd = math.gcd(width, height)
+                aspect_ratio = f"{width // aspect_ratio_gcd}:{height // aspect_ratio_gcd}"
+                url = f"https://api.replicate.com/v1/models/black-forest-labs/{model}/predictions"
                 json_payload = {
                     "input": {
                         "prompt": prompt,
                         "num_outputs": n,
-                        "aspect_ratio": "1:1",  # Assuming square output for simplicity
+                        "aspect_ratio": aspect_ratio,
                         "output_format": "webp",
                         "output_quality": 90
                     }
@@ -219,6 +222,8 @@ class Image:
                 time.sleep(1)
                 resp = requests.get(f"https://api.replicate.com/v1/predictions/{resp['id']}", headers={"Content-Type": "application/json", "Authorization": f"Token {replicate_api_key}"})
                 resp = resp.json()
+            if resp.get("status") != "succeeded" or not resp.get("output"):
+                raise RuntimeError(f"Replicate request failed: {resp}")
             image_data = requests.get(resp['output'][0]).content
             resp = base64.b64encode(image_data).decode()
         
